@@ -6,3 +6,12 @@ coverage/
 .env
 .env.*
 !.env.example
+
+# Internal planning and agent-local material must never enter the public repo
+internal/
+planning/internal/
+docs/internal/
+*.internal.md
+.hermes/
+.claude/
+.bww/
