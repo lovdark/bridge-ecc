@@ -1,0 +1,19 @@
+{
+  "name": "bridge-ecc",
+  "version": "0.1.0",
+  "private": false,
+  "description": "A cross-harness ECC-compatible bridge for command safety and desktop workflows.",
+  "type": "commonjs",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lovdark/bridge-ecc.git"
+  },
+  "scripts": {
+    "test": "node --test",
+    "test:chunk": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
