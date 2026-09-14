@@ -1,6 +1,6 @@
 # BridgeECC
 
-BridgeECC (BRECC) is an independent, ECC-compatible bridge for cross-harness workflows, command safety, and desktop tooling. It is designed to connect selected ECC capabilities with Hermes, PowerShell, macOS, Windows, Linux, and Batz Browser environments without requiring a full ECC checkout.
+BridgeECC (BRECC) is an independent, ECC-compatible bridge for cross-harness workflows, command safety, and desktop tooling. It is designed to connect selected ECC capabilities with Hermes, PowerShell, macOS, Windows, Linux, and desktop browser-cockpit environments without requiring a full ECC checkout.
 
 ## Project status
 
@@ -19,7 +19,7 @@ Early public scaffold. The first implementation target is a portable PowerShell 
 ## Planned layout
 
 - `core/` — policy schemas, decisions, and portable safety logic
-- `adapters/` — Hermes, PowerShell, macOS, Windows, and Batz Browser bridges
+- `adapters/` — Hermes, PowerShell, macOS, Windows, and desktop browser-cockpit bridges
 - `skills/` — curated, adapted workflow skills
 - `tests/` — core, platform, and compatibility tests
 - `scripts/` — bounded test runners and upstream sync helpers
