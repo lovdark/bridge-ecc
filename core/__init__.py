@@ -1,0 +1,1 @@
+"""BRECC portable safety core."""

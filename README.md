@@ -4,7 +4,7 @@ BridgeECC (BRECC) is an independent, ECC-compatible bridge for cross-harness wor
 
 ## Project status
 
-Early public scaffold. The first implementation target is a portable PowerShell command-safety bridge with Hermes and desktop adapters.
+Runnable Python MVP: `brecc analyze` performs bounded, fail-closed command analysis and returns an allow, review, or deny decision. The analyzer is advisory only; it never executes a command. The runtime uses only the Python standard library and does not require Node.js.
 
 ## Design goals
 
@@ -32,10 +32,20 @@ BridgeECC is independent and is not affiliated with or endorsed by the ECC maint
 ## Development
 
 ```text
-npm test
+python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
-The test command will remain divided into bounded stages as the project grows.
+Analyze a command locally:
+
+```text
+python3 bin/brecc.py analyze "Get-ChildItem ./src"
+python3 bin/brecc.py analyze --json "Remove-Item ./build -Recurse -Force"
+python3 bin/brecc.py analyze --file ./command.txt
+```
+
+Exit status is `0` for allow/review, `1` for deny, and `2` for invalid CLI input. Review findings cover network, privilege, process-control, and dynamic-evaluation operations. Destructive operations and analysis-budget violations deny by default.
+
+The JavaScript files are retained temporarily as historical scaffold material; Python is the canonical implementation and test path.
 
 ## License
 

@@ -3,17 +3,15 @@
   "version": "0.1.0",
   "private": false,
   "description": "A cross-harness ECC-compatible bridge for command safety and desktop workflows.",
-  "type": "commonjs",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/lovdark/bridge-ecc.git"
   },
   "scripts": {
-    "test": "node --test",
-    "test:chunk": "node --test"
+    "test": "python3 -m unittest discover -s tests -p 'test_*.py'",
+    "test:chunk": "python3 -m unittest discover -s tests -p 'test_*.py'",
+    "brecc": "python3 bin/brecc.py"
   },
-  "engines": {
-    "node": ">=18"
-  }
+  "engines": { "python": ">=3.9" }
 }

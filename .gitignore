@@ -1,5 +1,8 @@
 node_modules/
 .npm/
+__pycache__/
+*.pyc
+.coverage
 coverage/
 .DS_Store
 *.log
