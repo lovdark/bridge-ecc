@@ -1,0 +1,1 @@
+"""BRECC adapter package."""

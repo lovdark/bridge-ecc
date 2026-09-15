@@ -4,7 +4,7 @@ BridgeECC (BRECC) is an independent, ECC-compatible bridge for cross-harness wor
 
 ## Project status
 
-Runnable Python MVP: `brecc analyze` performs bounded, fail-closed command analysis and returns an allow, review, or deny decision. The analyzer is advisory only; it never executes a command. The runtime uses only the Python standard library and does not require Node.js.
+Runnable Python-first compatibility MVP: `brecc analyze`, `brecc catalog`, `brecc doctor`, and `brecc adapters` provide policy, discovery, diagnostics, and adapter capability contracts. The analyzer is advisory only; it never executes a command. The runtime uses only the Python standard library and does not require Node.js.
 
 ## Design goals
 
@@ -18,8 +18,8 @@ Runnable Python MVP: `brecc analyze` performs bounded, fail-closed command analy
 
 ## Planned layout
 
-- `core/` — policy schemas, decisions, and portable safety logic
-- `adapters/` — Hermes, PowerShell, macOS, Windows, and desktop browser-cockpit bridges
+- `core/` — policy, catalog, diagnostics, and portable safety logic
+- `adapters/` — Hermes, optional Node.js, PowerShell, and POSIX bridges
 - `skills/` — curated, adapted workflow skills
 - `tests/` — core, platform, and compatibility tests
 - `scripts/` — bounded test runners and upstream sync helpers
@@ -41,11 +41,14 @@ Analyze a command locally:
 python3 bin/brecc.py analyze "Get-ChildItem ./src"
 python3 bin/brecc.py analyze --json "Remove-Item ./build -Recurse -Force"
 python3 bin/brecc.py analyze --file ./command.txt
+python3 bin/brecc.py doctor . --json
+python3 bin/brecc.py adapters --json
+python3 bin/brecc.py catalog /path/to/ecc --json
 ```
 
 Exit status is `0` for allow/review, `1` for deny, and `2` for invalid CLI input. Review findings cover network, privilege, process-control, and dynamic-evaluation operations. Destructive operations and analysis-budget violations deny by default.
 
-The JavaScript files are retained temporarily as historical scaffold material; Python is the canonical implementation and test path.
+Node.js is an optional compatibility adapter for ECC scripts that have not yet been ported. It uses argument arrays, never shell interpolation, and reports a clear unavailable result when Node is absent. Python is the canonical implementation and test path.
 
 ## License
 
