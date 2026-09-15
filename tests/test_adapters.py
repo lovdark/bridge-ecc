@@ -2,6 +2,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from adapters.hermes import to_hermes_decision
 from adapters.hooks import build_hook_request
@@ -232,6 +233,36 @@ class AdapterTests(unittest.TestCase):
             self.assertEqual(len(json.loads((target / "settings.json").read_text(encoding="utf-8"))["hooks"]["PreToolUse"]), 1)
             transformed = (target / "agents/reviewer.md").read_text(encoding="utf-8")
             self.assertIn("model: pro", transformed); self.assertNotIn("color:", transformed)
+
+    def test_apply_rolls_back_partial_combined_write(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); source = root / "source"; target = root / "target"
+            source.mkdir(); target.mkdir()
+            (source / "one.txt").write_text("new", encoding="utf-8")
+            (source / "two.txt").write_text("also new", encoding="utf-8")
+            (target / "one.txt").write_text("original", encoding="utf-8")
+            plan = {"profile": "fixture", "target": "test", "source_root": str(source), "target_info": {"root": str(target)}, "modules": ["files"], "operations": [
+                {"module": "files", "source": "one.txt", "target": str(target / "one.txt"), "strategy": "preserve-relative-path", "read_only": True},
+                {"module": "files", "source": "two.txt", "target": str(target / "two.txt"), "strategy": "preserve-relative-path", "read_only": True},
+            ]}
+            digest = build_state(plan)["plan_sha256"]
+            import core.apply as apply_module
+            original_write = apply_module._atomic_write
+            calls = {"count": 0}
+
+            def fail_on_second(path, data):
+                calls["count"] += 1
+                if calls["count"] == 2:
+                    raise OSError("simulated disk failure")
+                return original_write(path, data)
+
+            with patch.object(apply_module, "_atomic_write", side_effect=fail_on_second):
+                result = apply_plan(plan, allow_writes=True, confirm_plan=digest, overwrite=True)
+            self.assertFalse(result["valid"])
+            self.assertIn("rolled back", result["error"])
+            self.assertEqual((target / "one.txt").read_text(encoding="utf-8"), "original")
+            self.assertFalse((target / "two.txt").exists())
+            self.assertFalse((target / ".brecc-state.json").exists())
 
 
 if __name__ == "__main__":
