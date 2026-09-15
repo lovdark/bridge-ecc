@@ -1,0 +1,46 @@
+name: BRECC CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out BRECC
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install BRECC from package metadata
+        run: python -m pip install --no-deps .
+
+      - name: Verify installed CLI
+        run: brecc --help
+
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -p 'test_*.py'
+
+      - name: Compile Python modules
+        run: python -m py_compile core/*.py adapters/*.py brecc/*.py bin/brecc.py
+
+      - name: Check repository whitespace
+        run: git diff --check
+
+      - name: Check out inspected ECC
+        uses: actions/checkout@v4
+        with:
+          repository: affaan-m/ECC
+          path: ecc-upstream
+
+      - name: Compare all ECC targets
+        run: brecc compat-report ecc-upstream developer --project-root ecc-upstream --json
