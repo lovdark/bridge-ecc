@@ -3,6 +3,8 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from core.targets import resolve_target
+
 
 REQUIRED_MANIFESTS = ("install-profiles.json", "install-modules.json")
 
@@ -23,7 +25,7 @@ def list_profiles(root: Path) -> List[Dict[str, Any]]:
     return [{"id": profile_id, "description": value.get("description", ""), "moduleCount": len(value.get("modules", []))} for profile_id, value in profiles.items()]
 
 
-def resolve_profile(root: Path, profile: str, target: Optional[str] = None) -> Dict[str, Any]:
+def resolve_profile(root: Path, profile: str, target: Optional[str] = None, home_dir: Optional[Path] = None, project_root: Optional[Path] = None) -> Dict[str, Any]:
     root = Path(root).expanduser().resolve()
     profiles = _load(root, "install-profiles.json").get("profiles", {})
     modules = {item.get("id"): item for item in _load(root, "install-modules.json").get("modules", [])}
@@ -38,6 +40,7 @@ def resolve_profile(root: Path, profile: str, target: Optional[str] = None) -> D
     skipped = []
     operations = []
     visited = set()
+    target_info = resolve_target(target, home_dir, project_root) if target else None
 
     def select(module_id: str) -> None:
         if module_id in visited:
@@ -55,7 +58,8 @@ def resolve_profile(root: Path, profile: str, target: Optional[str] = None) -> D
         for relative in module.get("paths", []):
             source = root / relative
             if source.exists():
-                operations.append({"module": module_id, "source": relative, "target": relative, "strategy": "copy", "read_only": True})
+                destination = Path(target_info["root"]) / relative if target_info else Path(relative)
+                operations.append({"module": module_id, "source": relative, "target": str(destination), "strategy": "copy", "read_only": True})
     for module_id in module_ids:
         select(module_id)
-    return {"valid": True, "profile": profile, "description": selected.get("description", ""), "target": target, "modules": chosen, "skipped_modules": skipped, "operations": operations, "write_required": bool(operations)}
+    return {"valid": True, "profile": profile, "description": selected.get("description", ""), "target": target, "target_info": target_info, "modules": chosen, "skipped_modules": skipped, "operations": operations, "write_required": bool(operations)}

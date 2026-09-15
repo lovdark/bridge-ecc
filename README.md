@@ -49,7 +49,7 @@ python3 bin/brecc.py catalog /path/to/ecc --json
 python3 bin/brecc.py validate /path/to/ecc --json
 python3 bin/brecc.py plan /path/to/ecc /target/path --component skill --json
 python3 bin/brecc.py profiles /path/to/ecc --json
-python3 bin/brecc.py ecc-plan /path/to/ecc developer --target hermes --json
+python3 bin/brecc.py ecc-plan /path/to/ecc developer --target hermes --home-dir "$HOME" --json
 ```
 
 Exit status is `0` for allow/review, `1` for deny, and `2` for invalid CLI input. Review findings cover network, privilege, process-control, and dynamic-evaluation operations. Destructive operations and analysis-budget violations deny by default.
@@ -61,6 +61,8 @@ Node.js is an optional compatibility adapter for ECC scripts that have not yet b
 The validator has been smoke-tested against the inspected ECC checkout: 1,163 component files checked with zero validation errors.
 
 The ECC profile resolver has been compared with ECC’s own `developer`/`hermes` plan: selected modules and target-skipped modules match, including transitive dependency ordering.
+
+Supported target roots currently mirror ECC’s registry: Claude, Cursor, Antigravity, Codex, Gemini, Hermes, OpenCode, OpenClaw, CodeBuddy, JoyCode, Kimi, Qwen, and Zed. Target resolution is read-only and distinguishes home-scoped targets from project-scoped targets.
 
 ## License
 

@@ -12,6 +12,7 @@ from core.catalog import catalog
 from core.doctor import repository_status
 from core.install_plan import build_install_plan
 from core.install_compat import list_profiles, resolve_profile
+from core.targets import resolve_target
 from core.validate import validate_tree
 
 
@@ -108,10 +109,17 @@ class AdapterTests(unittest.TestCase):
                 ']}', encoding="utf-8"
             )
             self.assertEqual(list_profiles(root)[0]["id"], "core")
-            result = resolve_profile(root, "core", "hermes")
+            result = resolve_profile(root, "core", "hermes", home_dir=root / "home")
             self.assertTrue(result["valid"])
             self.assertEqual(result["modules"], ["rules-core"])
             self.assertEqual(result["skipped_modules"], ["hooks-runtime"])
+            self.assertEqual(result["target_info"]["root"], str((root / "home/.hermes").resolve()))
+
+    def test_target_registry_distinguishes_home_and_project_roots(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            self.assertEqual(resolve_target("hermes", base)["root"], str((base / ".hermes").resolve()))
+            self.assertEqual(resolve_target("cursor", project_root=base)["root"], str((base / ".cursor").resolve()))
 
 
 if __name__ == "__main__":

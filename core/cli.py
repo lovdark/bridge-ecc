@@ -53,6 +53,8 @@ def build_parser() -> argparse.ArgumentParser:
     ecc_plan.add_argument("root", type=Path)
     ecc_plan.add_argument("profile")
     ecc_plan.add_argument("--target")
+    ecc_plan.add_argument("--home-dir", type=Path)
+    ecc_plan.add_argument("--project-root", type=Path)
     ecc_plan.add_argument("--json", action="store_true")
     adapters = subparsers.add_parser("adapters", help="report optional adapter capabilities")
     adapters.add_argument("--json", action="store_true")
@@ -98,7 +100,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 0 if "error" not in result else 1
     if args.action == "ecc-plan":
         try:
-            result = resolve_profile(args.root, args.profile, args.target)
+            result = resolve_profile(args.root, args.profile, args.target, args.home_dir, args.project_root)
         except ValueError as error:
             result = {"valid": False, "error": str(error), "operations": []}
         emit(result, args.json)
