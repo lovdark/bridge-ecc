@@ -143,6 +143,7 @@ class AdapterTests(unittest.TestCase):
             merged = plan_operations(source, cursor, "platform-configs", [".mcp.json"])
             self.assertEqual(merged[0]["strategy"], "merge-json")
             self.assertTrue(merged[0]["read_only"])
+            self.assertEqual(plan_operations(source, zed, "platform-configs", [".missing-platform-dir"]), [])
 
     def test_managed_state_is_deterministic_and_dry_run_never_writes(self):
         plan = {"profile": "core", "target": "hermes", "target_info": {"root": "/tmp/.hermes"}, "modules": ["rules"], "operations": [{"module": "rules", "source": "rules/a.md", "target": "/tmp/.hermes/rules/a.md", "strategy": "preserve-relative-path", "read_only": True}]}

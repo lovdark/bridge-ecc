@@ -5,6 +5,7 @@ from typing import Any, Dict, Iterable, List
 
 FLATTEN_TARGETS = {"antigravity", "codebuddy", "joycode", "zed"}
 MERGE_JSON_TARGETS = {"cursor", "kimi"}
+HERMES_PLATFORM_PATHS = {".pi", "mcp-configs", "scripts/auto-update.js", "scripts/setup-package-manager.js", ".hermes"}
 
 
 def _files(source: Path, relative: Path) -> Iterable[Path]:
@@ -20,6 +21,8 @@ def plan_operations(source: Path, target_info: Dict[str, str], module_id: str, p
     operations: List[Dict[str, Any]] = []
     for raw in paths:
         relative = Path(raw)
+        if target == "hermes" and module_id == "platform-configs" and raw not in HERMES_PLATFORM_PATHS:
+            continue
         if relative.is_absolute() or ".." in relative.parts:
             continue
         if target in MERGE_JSON_TARGETS and raw == ".mcp.json" and (source / relative).is_file():
@@ -33,8 +36,10 @@ def plan_operations(source: Path, target_info: Dict[str, str], module_id: str, p
             operations.append(operation)
             continue
         source_path = source / relative
+        if not source_path.exists():
+            continue
         if source_path.is_dir() and target not in FLATTEN_TARGETS and target != "cursor":
-            strategy = "sync-root-children" if relative.name.startswith(".") and relative.parent == Path(".") else "preserve-relative-path"
+            strategy = "sync-root-children" if target == "hermes" and relative == Path(".hermes") else "preserve-relative-path"
             operations.append({"kind": "copy-path", "module": module_id, "source": raw, "target": str(root / relative), "strategy": strategy, "ownership": "managed", "read_only": True})
             continue
         for file_path in _files(source, relative):
