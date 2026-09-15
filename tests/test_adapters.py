@@ -171,6 +171,18 @@ class AdapterTests(unittest.TestCase):
             self.assertTrue(Path(result["state_file"]).is_file())
             self.assertFalse(apply_plan(plan, allow_writes=True, confirm_plan="wrong")["valid"])
 
+    def test_apply_rejects_target_escape_before_writing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "source"
+            target = root / "target"
+            (source / "rules").mkdir(parents=True)
+            (source / "rules/a.md").write_text("rule", encoding="utf-8")
+            plan = {"profile": "core", "target": "hermes", "source_root": str(source), "target_info": {"root": str(target)}, "modules": ["rules"], "operations": [{"module": "rules", "source": "rules/a.md", "target": str(root / "outside.md"), "strategy": "preserve-relative-path", "read_only": True}]}
+            result = apply_plan(plan, allow_writes=True, confirm_plan=build_state(plan)["plan_sha256"])
+            self.assertFalse(result["valid"])
+            self.assertFalse((root / "outside.md").exists())
+
 
 if __name__ == "__main__":
     unittest.main()
