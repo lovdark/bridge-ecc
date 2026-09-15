@@ -66,9 +66,11 @@ The ECC profile resolver has been compared with ECC’s own `developer`/`hermes`
 
 Supported target roots currently mirror ECC’s registry: Claude, Cursor, Antigravity, Codex, Gemini, Hermes, OpenCode, OpenClaw, CodeBuddy, JoyCode, Kimi, Qwen, and Zed. Target resolution is read-only and distinguishes home-scoped targets from project-scoped targets.
 
-`state` emits a deterministic managed-state record with a plan hash. `apply-plan --dry-run` verifies and previews operations without enabling writes; invoking `apply-plan` without `--dry-run` fails closed until a separately approved write phase exists.
+`state` emits a deterministic managed-state record with a plan hash. `apply-plan --dry-run` verifies and previews operations without enabling writes. A write requires both `--allow-writes` and an exact `--confirm-plan` hash.
 
-Target operation planning is intentionally still read-only. The common strategies are implemented, but some harness-specific transforms and exact operation counts remain under compatibility testing before an apply phase is enabled.
+For live Hermes recovery, `scripts/hermes-repair.sh` defaults to diagnosis. `backup` creates a timestamped, checksum-verified local archive excluding credentials, logs, caches, and project trees. `apply HASH` creates that backup before invoking the guarded BRECC apply. `restore ARCHIVE RESTORE-HERMES` validates the archive, quarantines the current Hermes directory, and restores the archive; cavedoor upload remains a separate explicit operation.
+
+Target operation planning remains read-only; guarded application is available only through explicit flags and an exact plan hash. Common strategies, Claude hook merging, and Antigravity content transforms are covered by temporary-fixture tests.
 
 Compatibility status: the `developer`/`hermes` profile matches ECC's selected modules, skipped modules, operation count, and strategy distribution. Flatten-target path routing and preserved agent/workflow directory descriptors are implemented; target-specific skill selection and content transforms remain under comparison.
 

@@ -36,6 +36,9 @@ jobs:
       - name: Check repository whitespace
         run: git diff --check
 
+      - name: Check repair script syntax
+        run: bash -n scripts/hermes-repair.sh
+
       - name: Check out inspected ECC
         uses: actions/checkout@v4
         with:
