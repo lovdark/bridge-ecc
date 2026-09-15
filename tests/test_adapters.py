@@ -13,6 +13,7 @@ from core.doctor import repository_status
 from core.install_plan import build_install_plan
 from core.install_compat import list_profiles, resolve_profile
 from core.operations import plan_operations
+from core.install_state import build_state, verify_dry_run
 from core.targets import resolve_target
 from core.validate import validate_tree
 
@@ -141,6 +142,17 @@ class AdapterTests(unittest.TestCase):
             merged = plan_operations(source, cursor, "platform-configs", [".mcp.json"])
             self.assertEqual(merged[0]["strategy"], "merge-json")
             self.assertTrue(merged[0]["read_only"])
+
+    def test_managed_state_is_deterministic_and_dry_run_never_writes(self):
+        plan = {"profile": "core", "target": "hermes", "target_info": {"root": "/tmp/.hermes"}, "modules": ["rules"], "operations": [{"module": "rules", "source": "rules/a.md", "target": "/tmp/.hermes/rules/a.md", "strategy": "preserve-relative-path", "read_only": True}]}
+        first = build_state(plan)
+        second = build_state(plan)
+        self.assertEqual(first, second)
+        result = verify_dry_run(plan, dry_run=True)
+        self.assertTrue(result["valid"])
+        self.assertFalse(result["write_enabled"])
+        self.assertEqual(result["operation_count"], 1)
+        self.assertFalse(verify_dry_run(plan, dry_run=False)["valid"])
 
 
 if __name__ == "__main__":

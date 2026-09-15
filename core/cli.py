@@ -15,6 +15,7 @@ from core.doctor import repository_status, runtime_status
 from core.policy import inspect_command
 from core.install_plan import build_install_plan
 from core.install_compat import list_profiles, resolve_profile
+from core.install_state import build_state, verify_dry_run
 from core.validate import validate_tree
 
 
@@ -56,6 +57,21 @@ def build_parser() -> argparse.ArgumentParser:
     ecc_plan.add_argument("--home-dir", type=Path)
     ecc_plan.add_argument("--project-root", type=Path)
     ecc_plan.add_argument("--json", action="store_true")
+    state = subparsers.add_parser("state", help="emit deterministic managed state for an ECC plan")
+    state.add_argument("root", type=Path)
+    state.add_argument("profile")
+    state.add_argument("--target")
+    state.add_argument("--home-dir", type=Path)
+    state.add_argument("--project-root", type=Path)
+    state.add_argument("--json", action="store_true")
+    apply_plan = subparsers.add_parser("apply-plan", help="review a plan without enabling writes")
+    apply_plan.add_argument("root", type=Path)
+    apply_plan.add_argument("profile")
+    apply_plan.add_argument("--target")
+    apply_plan.add_argument("--home-dir", type=Path)
+    apply_plan.add_argument("--project-root", type=Path)
+    apply_plan.add_argument("--dry-run", action="store_true")
+    apply_plan.add_argument("--json", action="store_true")
     adapters = subparsers.add_parser("adapters", help="report optional adapter capabilities")
     adapters.add_argument("--json", action="store_true")
     return parser
@@ -105,6 +121,19 @@ def main(argv: Optional[List[str]] = None) -> int:
             result = {"valid": False, "error": str(error), "operations": []}
         emit(result, args.json)
         return 0 if result["valid"] else 1
+    if args.action in {"state", "apply-plan"}:
+        try:
+            plan = resolve_profile(args.root, args.profile, args.target, args.home_dir, args.project_root)
+            if not plan["valid"]:
+                result = plan
+            elif args.action == "state":
+                result = build_state(plan)
+            else:
+                result = verify_dry_run(plan, dry_run=args.dry_run)
+        except ValueError as error:
+            result = {"valid": False, "error": str(error)}
+        emit(result, args.json)
+        return 0 if result.get("valid") else 1
     if args.action == "doctor":
         result = {"runtime": runtime_status(), "repository": repository_status(args.root)}
         emit(result, args.json)
