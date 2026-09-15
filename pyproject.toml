@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bridge-ecc"
+version = "0.2.0"
+description = "Python-first ECC-compatible bridge for command safety and cross-harness workflows"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "BridgeECC contributors" }]
+dependencies = []
+
+[project.scripts]
+brecc = "core.cli:main"
+
+[tool.setuptools]
+packages = ["brecc", "core", "adapters"]

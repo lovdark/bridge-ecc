@@ -9,6 +9,7 @@ from adapters.posix import argv as posix_argv
 from adapters.powershell import argv as powershell_argv
 from core.catalog import catalog
 from core.doctor import repository_status
+from core.validate import validate_tree
 
 
 class AdapterTests(unittest.TestCase):
@@ -43,6 +44,16 @@ class AdapterTests(unittest.TestCase):
             for path in ("core/policy.py", "bin/brecc.py", "tests/test_policy.py"):
                 (root / path).write_text("", encoding="utf-8")
             self.assertTrue(repository_status(root)["healthy"])
+
+    def test_validate_tree_checks_skill_frontmatter(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            skill = root / "skills/demo"
+            skill.mkdir(parents=True)
+            (skill / "SKILL.md").write_text("---\nname: demo\ndescription: test\n---\n# Demo", encoding="utf-8")
+            self.assertTrue(validate_tree(root)["valid"])
+            (skill / "SKILL.md").write_text("# Demo", encoding="utf-8")
+            self.assertFalse(validate_tree(root)["valid"])
 
 
 if __name__ == "__main__":

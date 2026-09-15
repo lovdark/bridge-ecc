@@ -4,7 +4,7 @@ BridgeECC (BRECC) is an independent, ECC-compatible bridge for cross-harness wor
 
 ## Project status
 
-Runnable Python-first compatibility MVP: `brecc analyze`, `brecc catalog`, `brecc doctor`, and `brecc adapters` provide policy, discovery, diagnostics, and adapter capability contracts. The analyzer is advisory only; it never executes a command. The runtime uses only the Python standard library and does not require Node.js.
+Runnable Python-first compatibility MVP: `brecc analyze`, `brecc catalog`, `brecc validate`, `brecc doctor`, and `brecc adapters` provide policy, discovery, validation, diagnostics, and adapter capability contracts. The analyzer is advisory only; it never executes a command. The runtime uses only the Python standard library and does not require Node.js.
 
 ## Design goals
 
@@ -33,6 +33,8 @@ BridgeECC is independent and is not affiliated with or endorsed by the ECC maint
 
 ```text
 python3 -m unittest discover -s tests -p 'test_*.py'
+# Optional editable install; exposes the `brecc` command
+python3 -m pip install -e .
 ```
 
 Analyze a command locally:
@@ -44,6 +46,7 @@ python3 bin/brecc.py analyze --file ./command.txt
 python3 bin/brecc.py doctor . --json
 python3 bin/brecc.py adapters --json
 python3 bin/brecc.py catalog /path/to/ecc --json
+python3 bin/brecc.py validate /path/to/ecc --json
 ```
 
 Exit status is `0` for allow/review, `1` for deny, and `2` for invalid CLI input. Review findings cover network, privilege, process-control, and dynamic-evaluation operations. Destructive operations and analysis-budget violations deny by default.
