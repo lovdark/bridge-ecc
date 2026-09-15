@@ -50,6 +50,8 @@ python3 bin/brecc.py validate /path/to/ecc --json
 python3 bin/brecc.py plan /path/to/ecc /target/path --component skill --json
 python3 bin/brecc.py profiles /path/to/ecc --json
 python3 bin/brecc.py ecc-plan /path/to/ecc developer --target hermes --home-dir "$HOME" --json
+python3 bin/brecc.py state /path/to/ecc developer --target hermes --home-dir "$HOME" --json
+python3 bin/brecc.py apply-plan /path/to/ecc developer --target hermes --home-dir "$HOME" --dry-run --json
 ```
 
 Exit status is `0` for allow/review, `1` for deny, and `2` for invalid CLI input. Review findings cover network, privilege, process-control, and dynamic-evaluation operations. Destructive operations and analysis-budget violations deny by default.
@@ -63,6 +65,8 @@ The validator has been smoke-tested against the inspected ECC checkout: 1,163 co
 The ECC profile resolver has been compared with ECC’s own `developer`/`hermes` plan: selected modules and target-skipped modules match, including transitive dependency ordering.
 
 Supported target roots currently mirror ECC’s registry: Claude, Cursor, Antigravity, Codex, Gemini, Hermes, OpenCode, OpenClaw, CodeBuddy, JoyCode, Kimi, Qwen, and Zed. Target resolution is read-only and distinguishes home-scoped targets from project-scoped targets.
+
+`state` emits a deterministic managed-state record with a plan hash. `apply-plan --dry-run` verifies and previews operations without enabling writes; invoking `apply-plan` without `--dry-run` fails closed until a separately approved write phase exists.
 
 Target operation planning is intentionally still read-only. The common strategies are implemented, but some harness-specific transforms and exact operation counts remain under compatibility testing before an apply phase is enabled.
 
