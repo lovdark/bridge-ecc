@@ -2,10 +2,51 @@
 # Fail-closed Hermes repair and recovery wrapper for BRECC.
 set -euo pipefail
 
-TARGET_ROOT="${BRECC_HERMES_ROOT:-${HOME}/.hermes}"
-BACKUP_ROOT="${BRECC_BACKUP_ROOT:-${HOME}/backups}"
+discover_target() {
+  if [[ -n "${BRECC_HERMES_ROOT:-}" ]]; then
+    printf '%s\n' "$BRECC_HERMES_ROOT"
+    return 0
+  fi
+  python3 - <<'PY'
+import os
+import sys
+from pathlib import Path
+home = Path.home()
+config = Path(os.environ.get("XDG_CONFIG_HOME", home / ".config"))
+candidates = [home / ".hermes", config / "hermes", config / "hermes-agent"]
+markers = {"config.yaml", "skills", "state.db", "cron", "scripts"}
+found = []
+seen = set()
+for path in candidates:
+    try:
+        resolved = path.expanduser().resolve()
+    except OSError:
+        continue
+    if str(resolved) in seen or not resolved.is_dir():
+        continue
+    seen.add(str(resolved))
+    if any((resolved / marker).exists() for marker in markers):
+        found.append(resolved)
+if len(found) == 1:
+    print(found[0])
+    raise SystemExit(0)
+if not found:
+    print("No Hermes directory was discovered. Set BRECC_HERMES_ROOT to the Hermes data directory.", file=sys.stderr, flush=True)
+else:
+    print("Multiple Hermes directories were discovered; set BRECC_HERMES_ROOT explicitly:", file=sys.stderr, flush=True)
+    for path in found:
+        print(f"  {path}", file=sys.stderr, flush=True)
+raise SystemExit(2)
+PY
+}
+
+if ! TARGET_ROOT="$(discover_target)"; then
+  printf '%s\n' "$TARGET_ROOT" >&2
+  exit 2
+fi
+BACKUP_ROOT="${BRECC_BACKUP_ROOT:-${XDG_STATE_HOME:-${HOME}/.local/state}/brecc/backups}"
 ECC_ROOT="${BRECC_ECC_ROOT:-${TMPDIR:-/tmp}/ecc-latest}"
-PROJECT_ROOT="${BRECC_PROJECT_ROOT:-${HOME}/projects}"
+PROJECT_ROOT="${BRECC_PROJECT_ROOT:-${HOME}}"
 PROFILE="${BRECC_PROFILE:-developer}"
 TARGET="${BRECC_TARGET:-hermes}"
 
@@ -19,10 +60,10 @@ Usage:
   hermes-repair.sh restore BACKUP_ARCHIVE CONFIRM_RESTORE
 
 Environment overrides:
-  BRECC_HERMES_ROOT  (default: $HOME/.hermes)
-  BRECC_BACKUP_ROOT  (default: $HOME/backups)
+  BRECC_HERMES_ROOT  (auto-discovered; required when ambiguous or nonstandard)
+  BRECC_BACKUP_ROOT  (default: $XDG_STATE_HOME/brecc/backups or $HOME/.local/state/brecc/backups)
   BRECC_ECC_ROOT     (default: /tmp/ecc-latest)
-  BRECC_PROJECT_ROOT (default: $HOME/projects)
+  BRECC_PROJECT_ROOT (default: $HOME; only needed by plan/apply)
   BRECC_PROFILE      (default: developer)
   BRECC_TARGET       (default: hermes)
 

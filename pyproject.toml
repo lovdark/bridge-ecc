@@ -17,3 +17,4 @@ brecc = "core.cli:main"
 
 [tool.setuptools]
 packages = ["brecc", "core", "adapters"]
+script-files = ["scripts/hermes-repair.sh", "scripts/install-hermes-repair.sh"]
