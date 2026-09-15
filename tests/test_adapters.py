@@ -12,6 +12,7 @@ from core.catalog import catalog
 from core.doctor import repository_status
 from core.install_plan import build_install_plan
 from core.install_compat import list_profiles, resolve_profile
+from core.operations import plan_operations
 from core.targets import resolve_target
 from core.validate import validate_tree
 
@@ -120,6 +121,26 @@ class AdapterTests(unittest.TestCase):
             base = Path(directory)
             self.assertEqual(resolve_target("hermes", base)["root"], str((base / ".hermes").resolve()))
             self.assertEqual(resolve_target("cursor", project_root=base)["root"], str((base / ".cursor").resolve()))
+
+    def test_target_operation_strategies(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "source"
+            (source / "rules/common").mkdir(parents=True)
+            (source / "rules/common/security.md").write_text("rule", encoding="utf-8")
+            (source / ".mcp.json").write_text('{"mcpServers": {}}', encoding="utf-8")
+            zed = resolve_target("zed", project_root=Path(directory))
+            flattened = plan_operations(source, zed, "rules-core", ["rules"])
+            self.assertEqual(flattened[0]["strategy"], "flatten-copy")
+            self.assertTrue(flattened[0]["target"].endswith("rules/common-security.md"))
+            (source / ".cursor/rules").mkdir(parents=True)
+            (source / ".cursor/rules/common.md").write_text("rule", encoding="utf-8")
+            cursor_rules = plan_operations(source, resolve_target("cursor", project_root=Path(directory)), "platform-configs", [".cursor/rules"])
+            self.assertEqual(cursor_rules[0]["strategy"], "flatten-copy")
+            self.assertTrue(cursor_rules[0]["target"].endswith("rules/common.mdc"))
+            cursor = resolve_target("cursor", project_root=Path(directory))
+            merged = plan_operations(source, cursor, "platform-configs", [".mcp.json"])
+            self.assertEqual(merged[0]["strategy"], "merge-json")
+            self.assertTrue(merged[0]["read_only"])
 
 
 if __name__ == "__main__":

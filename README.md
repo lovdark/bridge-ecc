@@ -4,7 +4,7 @@ BridgeECC (BRECC) is an independent, ECC-compatible bridge for cross-harness wor
 
 ## Project status
 
-Runnable Python-first compatibility MVP: `brecc analyze`, `brecc catalog`, `brecc validate`, `brecc plan`, `brecc profiles`, `brecc ecc-plan`, `brecc doctor`, and `brecc adapters` provide policy, discovery, validation, read-only installation planning, ECC profile resolution, diagnostics, and adapter capability contracts. The analyzer is advisory only; it never executes a command. Golden policy fixtures cover safe, review, chained, dynamic, Git, container, infrastructure, PowerShell, and shell cases. The runtime uses only the Python standard library and does not require Node.js.
+Runnable Python-first compatibility MVP: `brecc analyze`, `brecc catalog`, `brecc validate`, `brecc plan`, `brecc profiles`, `brecc ecc-plan`, `brecc doctor`, and `brecc adapters` provide policy, discovery, validation, read-only installation planning, ECC profile resolution, diagnostics, and adapter capability contracts. Target planning supports preserve-relative-path, sync-root-children, flatten-copy, and merge-json descriptors. The analyzer is advisory only; it never executes a command. Golden policy fixtures cover safe, review, chained, dynamic, Git, container, infrastructure, PowerShell, and shell cases. The runtime uses only the Python standard library and does not require Node.js.
 
 ## Design goals
 
@@ -63,6 +63,8 @@ The validator has been smoke-tested against the inspected ECC checkout: 1,163 co
 The ECC profile resolver has been compared with ECC’s own `developer`/`hermes` plan: selected modules and target-skipped modules match, including transitive dependency ordering.
 
 Supported target roots currently mirror ECC’s registry: Claude, Cursor, Antigravity, Codex, Gemini, Hermes, OpenCode, OpenClaw, CodeBuddy, JoyCode, Kimi, Qwen, and Zed. Target resolution is read-only and distinguishes home-scoped targets from project-scoped targets.
+
+Target operation planning is intentionally still read-only. The common strategies are implemented, but some harness-specific transforms and exact operation counts remain under compatibility testing before an apply phase is enabled.
 
 ## License
 

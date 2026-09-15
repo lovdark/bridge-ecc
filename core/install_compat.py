@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from core.targets import resolve_target
+from core.operations import plan_operations
 
 
 REQUIRED_MANIFESTS = ("install-profiles.json", "install-modules.json")
@@ -55,11 +56,12 @@ def resolve_profile(root: Path, profile: str, target: Optional[str] = None, home
             if dependency in modules:
                 select(dependency)
         chosen.append(module_id)
-        for relative in module.get("paths", []):
-            source = root / relative
-            if source.exists():
-                destination = Path(target_info["root"]) / relative if target_info else Path(relative)
-                operations.append({"module": module_id, "source": relative, "target": str(destination), "strategy": "copy", "read_only": True})
+        if target_info:
+            operations.extend(plan_operations(root, target_info, module_id, module.get("paths", [])))
+        else:
+            for relative in module.get("paths", []):
+                if (root / relative).exists():
+                    operations.append({"module": module_id, "source": relative, "target": relative, "strategy": "preserve-relative-path", "read_only": True})
     for module_id in module_ids:
         select(module_id)
     return {"valid": True, "profile": profile, "description": selected.get("description", ""), "target": target, "target_info": target_info, "modules": chosen, "skipped_modules": skipped, "operations": operations, "write_required": bool(operations)}
