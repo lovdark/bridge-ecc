@@ -11,6 +11,7 @@ from adapters.powershell import argv as powershell_argv
 from core.catalog import catalog
 from core.doctor import repository_status
 from core.install_plan import build_install_plan
+from core.install_compat import list_profiles, resolve_profile
 from core.validate import validate_tree
 
 
@@ -90,6 +91,27 @@ class AdapterTests(unittest.TestCase):
             self.assertTrue(result["write_required"])
             self.assertFalse(target.exists())
             self.assertEqual(result["actions"][0]["kind"], "skill")
+
+    def test_ecc_profile_resolution_preserves_target_skips(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "manifests").mkdir()
+            (root / "rules").mkdir()
+            (root / "rules/common.md").write_text("rules", encoding="utf-8")
+            (root / "manifests/install-profiles.json").write_text(
+                '{"version": 1, "profiles": {"core": {"description": "Core", "modules": ["rules-core", "hooks-runtime"]}}}', encoding="utf-8"
+            )
+            (root / "manifests/install-modules.json").write_text(
+                '{"version": 1, "modules": ['
+                '{"id": "rules-core", "kind": "rules", "paths": ["rules"], "targets": ["hermes"]},'
+                '{"id": "hooks-runtime", "kind": "hooks", "paths": ["hooks"], "targets": ["claude"]}'
+                ']}', encoding="utf-8"
+            )
+            self.assertEqual(list_profiles(root)[0]["id"], "core")
+            result = resolve_profile(root, "core", "hermes")
+            self.assertTrue(result["valid"])
+            self.assertEqual(result["modules"], ["rules-core"])
+            self.assertEqual(result["skipped_modules"], ["hooks-runtime"])
 
 
 if __name__ == "__main__":

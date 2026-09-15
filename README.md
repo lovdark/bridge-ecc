@@ -4,7 +4,7 @@ BridgeECC (BRECC) is an independent, ECC-compatible bridge for cross-harness wor
 
 ## Project status
 
-Runnable Python-first compatibility MVP: `brecc analyze`, `brecc catalog`, `brecc validate`, `brecc plan`, `brecc doctor`, and `brecc adapters` provide policy, discovery, validation, read-only installation planning, diagnostics, and adapter capability contracts. The analyzer is advisory only; it never executes a command. Golden policy fixtures cover safe, review, chained, dynamic, Git, container, infrastructure, PowerShell, and shell cases. The runtime uses only the Python standard library and does not require Node.js.
+Runnable Python-first compatibility MVP: `brecc analyze`, `brecc catalog`, `brecc validate`, `brecc plan`, `brecc profiles`, `brecc ecc-plan`, `brecc doctor`, and `brecc adapters` provide policy, discovery, validation, read-only installation planning, ECC profile resolution, diagnostics, and adapter capability contracts. The analyzer is advisory only; it never executes a command. Golden policy fixtures cover safe, review, chained, dynamic, Git, container, infrastructure, PowerShell, and shell cases. The runtime uses only the Python standard library and does not require Node.js.
 
 ## Design goals
 
@@ -48,6 +48,8 @@ python3 bin/brecc.py adapters --json
 python3 bin/brecc.py catalog /path/to/ecc --json
 python3 bin/brecc.py validate /path/to/ecc --json
 python3 bin/brecc.py plan /path/to/ecc /target/path --component skill --json
+python3 bin/brecc.py profiles /path/to/ecc --json
+python3 bin/brecc.py ecc-plan /path/to/ecc developer --target hermes --json
 ```
 
 Exit status is `0` for allow/review, `1` for deny, and `2` for invalid CLI input. Review findings cover network, privilege, process-control, and dynamic-evaluation operations. Destructive operations and analysis-budget violations deny by default.
@@ -57,6 +59,8 @@ Node.js is an optional compatibility adapter for ECC scripts that have not yet b
 `plan` and hook adapters are read-only. They describe proposed copy actions or return approval contracts; they do not modify the filesystem or execute commands.
 
 The validator has been smoke-tested against the inspected ECC checkout: 1,163 component files checked with zero validation errors.
+
+The ECC profile resolver has been compared with ECC’s own `developer`/`hermes` plan: selected modules and target-skipped modules match, including transitive dependency ordering.
 
 ## License
 

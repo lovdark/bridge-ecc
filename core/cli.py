@@ -14,6 +14,7 @@ from core.catalog import catalog
 from core.doctor import repository_status, runtime_status
 from core.policy import inspect_command
 from core.install_plan import build_install_plan
+from core.install_compat import list_profiles, resolve_profile
 from core.validate import validate_tree
 
 
@@ -45,6 +46,14 @@ def build_parser() -> argparse.ArgumentParser:
     plan.add_argument("target", type=Path)
     plan.add_argument("--component", action="append", dest="components", help="limit to a component kind")
     plan.add_argument("--json", action="store_true")
+    profiles = subparsers.add_parser("profiles", help="list ECC install profiles from a repository")
+    profiles.add_argument("root", nargs="?", default=".", type=Path)
+    profiles.add_argument("--json", action="store_true")
+    ecc_plan = subparsers.add_parser("ecc-plan", help="resolve an ECC install profile read-only")
+    ecc_plan.add_argument("root", type=Path)
+    ecc_plan.add_argument("profile")
+    ecc_plan.add_argument("--target")
+    ecc_plan.add_argument("--json", action="store_true")
     adapters = subparsers.add_parser("adapters", help="report optional adapter capabilities")
     adapters.add_argument("--json", action="store_true")
     return parser
@@ -78,6 +87,20 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 0 if result["valid"] else 1
     if args.action == "plan":
         result = build_install_plan(args.source, args.target, args.components)
+        emit(result, args.json)
+        return 0 if result["valid"] else 1
+    if args.action == "profiles":
+        try:
+            result = {"profiles": list_profiles(args.root)}
+        except ValueError as error:
+            result = {"profiles": [], "error": str(error)}
+        emit(result, args.json)
+        return 0 if "error" not in result else 1
+    if args.action == "ecc-plan":
+        try:
+            result = resolve_profile(args.root, args.profile, args.target)
+        except ValueError as error:
+            result = {"valid": False, "error": str(error), "operations": []}
         emit(result, args.json)
         return 0 if result["valid"] else 1
     if args.action == "doctor":
