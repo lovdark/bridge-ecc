@@ -37,7 +37,7 @@ jobs:
         run: git diff --check
 
       - name: Check repair script syntax
-        run: bash -n scripts/hermes-repair.sh scripts/install-hermes-repair.sh
+        run: bash -n scripts/hermes-repair.sh scripts/install-hermes-repair.sh scripts/brecc-target-repair.sh scripts/install-target-repair.sh
 
       - name: Check out inspected ECC
         uses: actions/checkout@v4
