@@ -48,7 +48,7 @@ def plan_operations(source: Path, target_info: Dict[str, str], module_id: str, p
             continue
         if target == "cursor" and module_id == "hooks-runtime" and raw == "hooks":
             continue
-        if target in {"joycode", "zed"} and module_id == "platform-configs" and raw not in FLAT_PLATFORM_PATHS and not (target == "zed" and raw == ".zed"):
+        if target in {"codebuddy", "joycode", "zed"} and module_id == "platform-configs" and raw not in FLAT_PLATFORM_PATHS and not (target == "zed" and raw == ".zed"):
             continue
         if target == "cursor" and module_id == "platform-configs" and raw not in CURSOR_PLATFORM_PATHS and not raw.startswith(".cursor/rules") and raw != ".mcp.json":
             continue
@@ -108,11 +108,11 @@ def plan_operations(source: Path, target_info: Dict[str, str], module_id: str, p
                     operation["merge_payload"] = merge_payload
                 operations.append(operation)
             continue
-        if target in {"joycode", "zed"} and module_id == "platform-configs" and relative in {Path(".pi"), Path("mcp-configs"), Path(".zed")} and source_path.is_dir():
+        if target in {"codebuddy", "joycode", "zed"} and module_id == "platform-configs" and relative in {Path(".pi"), Path("mcp-configs"), Path(".zed")} and source_path.is_dir():
             strategy = "sync-root-children" if target == "zed" and relative == Path(".zed") else "preserve-relative-path"
             operations.append({"kind": "copy-path", "module": module_id, "source": raw, "target": str(root / relative), "strategy": strategy, "ownership": "managed", "read_only": True})
             continue
-        if target in {"joycode", "zed"} and module_id in {"agents-core", "commands-core"} and source_path.is_dir():
+        if target in {"codebuddy", "joycode", "zed"} and module_id in {"agents-core", "commands-core", "hooks-runtime"} and source_path.is_dir():
             operations.append({"kind": "copy-path", "module": module_id, "source": raw, "target": str(root / relative), "strategy": "preserve-relative-path", "ownership": "managed", "read_only": True})
             continue
         if target in FLATTEN_TARGETS and relative.parts[:1] == ("skills",) and source_path.is_dir():
