@@ -24,6 +24,7 @@ CURSOR_FLATTEN_MODULES = {"agents-core", "rules-core"}
 CURSOR_RULE_PATHS = {"angular", "arkts", "cpp", "csharp", "dart", "fsharp", "java", "nuxt", "perl", "react", "react-native", "ruby", "rust", "vue", "web"}
 CURSOR_RULE_EXCEPTIONS = {"rules/common/code-review.md", "rules/python/fastapi.md"}
 CURSOR_PLATFORM_PATHS = {".cursor", ".pi", "mcp-configs", "scripts/auto-update.js", "scripts/setup-package-manager.js"}
+FLAT_PLATFORM_PATHS = {".pi", "mcp-configs", "scripts/auto-update.js", "scripts/setup-package-manager.js"}
 
 
 def _files(source: Path, relative: Path) -> Iterable[Path]:
@@ -47,9 +48,11 @@ def plan_operations(source: Path, target_info: Dict[str, str], module_id: str, p
             continue
         if target == "cursor" and module_id == "hooks-runtime" and raw == "hooks":
             continue
+        if target in {"joycode", "zed"} and module_id == "platform-configs" and raw not in FLAT_PLATFORM_PATHS and not (target == "zed" and raw == ".zed"):
+            continue
         if target == "cursor" and module_id == "platform-configs" and raw not in CURSOR_PLATFORM_PATHS and not raw.startswith(".cursor/rules") and raw != ".mcp.json":
             continue
-        if target in FLATTEN_TARGETS and module_id in FLATTEN_MODULE_PATHS:
+        if target == "antigravity" and module_id in FLATTEN_MODULE_PATHS:
             allowed = FLATTEN_MODULE_PATHS[module_id]
             if not any(raw == prefix or raw.startswith(prefix + "/") for prefix in allowed):
                 continue
@@ -105,6 +108,13 @@ def plan_operations(source: Path, target_info: Dict[str, str], module_id: str, p
                     operation["merge_payload"] = merge_payload
                 operations.append(operation)
             continue
+        if target in {"joycode", "zed"} and module_id == "platform-configs" and relative in {Path(".pi"), Path("mcp-configs"), Path(".zed")} and source_path.is_dir():
+            strategy = "sync-root-children" if target == "zed" and relative == Path(".zed") else "preserve-relative-path"
+            operations.append({"kind": "copy-path", "module": module_id, "source": raw, "target": str(root / relative), "strategy": strategy, "ownership": "managed", "read_only": True})
+            continue
+        if target in {"joycode", "zed"} and module_id in {"agents-core", "commands-core"} and source_path.is_dir():
+            operations.append({"kind": "copy-path", "module": module_id, "source": raw, "target": str(root / relative), "strategy": "preserve-relative-path", "ownership": "managed", "read_only": True})
+            continue
         if target in FLATTEN_TARGETS and relative.parts[:1] == ("skills",) and source_path.is_dir():
             operations.append({"kind": "copy-path", "module": module_id, "source": raw, "target": str(root / relative), "strategy": "preserve-relative-path", "ownership": "managed", "read_only": True})
             continue
@@ -118,7 +128,7 @@ def plan_operations(source: Path, target_info: Dict[str, str], module_id: str, p
                 else:
                     operations.append({"kind": "copy-path", "module": module_id, "source": child_name, "target": str(root / child_name), "strategy": "preserve-relative-path", "ownership": "managed", "read_only": True})
             continue
-        if target in FLATTEN_TARGETS and module_id in {"agents-core", "commands-core"} and relative in {Path("agents"), Path("commands")} and source_path.is_dir():
+        if target == "antigravity" and module_id in {"agents-core", "commands-core"} and relative in {Path("agents"), Path("commands")} and source_path.is_dir():
             destination = root / ("workflows" if relative == Path("commands") else "agents")
             operation = {"kind": "copy-path", "module": module_id, "source": raw, "target": str(destination), "strategy": "preserve-relative-path", "ownership": "managed", "read_only": True}
             if target == "antigravity" and relative == Path("agents"):
