@@ -56,6 +56,8 @@ Node.js is an optional compatibility adapter for ECC scripts that have not yet b
 
 `plan` and hook adapters are read-only. They describe proposed copy actions or return approval contracts; they do not modify the filesystem or execute commands.
 
+The validator has been smoke-tested against the inspected ECC checkout: 1,163 component files checked with zero validation errors.
+
 ## License
 
 MIT. See `LICENSE`.

@@ -57,6 +57,22 @@ class AdapterTests(unittest.TestCase):
             (skill / "SKILL.md").write_text("# Demo", encoding="utf-8")
             self.assertFalse(validate_tree(root)["valid"])
 
+    def test_validate_tree_checks_ecc_agent_command_and_hook_shapes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "agents").mkdir()
+            (root / "commands").mkdir()
+            (root / "hooks").mkdir()
+            (root / "agents/reviewer.md").write_text("---\nname: reviewer\ndescription: review\n---\nPrompt", encoding="utf-8")
+            (root / "commands/check.md").write_text("---\ndescription: check\n---\nRun check", encoding="utf-8")
+            (root / "hooks/hooks.json").write_text('{"hooks": {"PreToolUse": []}}', encoding="utf-8")
+            (root / "hooks/hooks.metadata.json").write_text('{"entries": {"PreToolUse": []}}', encoding="utf-8")
+            (root / "hooks/events.json").write_text('{"events": []}', encoding="utf-8")
+            (root / "agents/__init__.py").write_text("", encoding="utf-8")
+            self.assertTrue(validate_tree(root)["valid"])
+            (root / "hooks/hooks.json").write_text('{"bad": true}', encoding="utf-8")
+            self.assertFalse(validate_tree(root)["valid"])
+
     def test_hook_request_never_enables_execution(self):
         request = build_hook_request("pre-tool", "rm -rf ./cache")
         self.assertFalse(request["execute"])
