@@ -208,6 +208,31 @@ class AdapterTests(unittest.TestCase):
         self.assertIn("  - run_command", result)
         self.assertIn("model: pro", result)
 
+    def test_end_to_end_apply_combines_copy_flatten_merges_and_transform(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); source = root / "source"; target = root / "target"
+            (source / "rules").mkdir(parents=True); (source / "agents").mkdir(parents=True); target.mkdir()
+            (source / "rules/security.md").write_text("rule", encoding="utf-8")
+            (source / "agents/reviewer.md").write_text("---\nname: reviewer\ncolor: blue\ntools: [Read, Bash]\nmodel: sonnet\n---\nPrompt\n", encoding="utf-8")
+            (source / ".mcp.json").write_text('{"mcpServers": {"new": {"command": "tool"}}}', encoding="utf-8")
+            hook = {"matcher": "Bash", "hooks": [{"type": "command", "command": "check"}]}
+            (source / "hooks.json").write_text(json.dumps({"hooks": {"PreToolUse": [hook]}}), encoding="utf-8")
+            (target / "mcp.json").write_text('{"mcpServers": {"old": {"command": "keep"}}}', encoding="utf-8")
+            (target / "settings.json").write_text('{"theme": "dark"}', encoding="utf-8")
+            plan = {"profile": "fixture", "target": "test", "source_root": str(source), "target_info": {"root": str(target)}, "modules": ["rules", "agents", "mcp", "hooks"], "operations": [
+                {"module": "rules", "source": "rules/security.md", "target": str(target / "rules/security.mdc"), "strategy": "flatten-copy", "read_only": True},
+                {"module": "mcp", "source": ".mcp.json", "target": str(target / "mcp.json"), "strategy": "merge-json", "read_only": True},
+                {"module": "hooks", "source": "hooks.json", "target": str(target / "settings.json"), "strategy": "merge-hook-ids", "read_only": True},
+                {"module": "agents", "source": "agents", "target": str(target / "agents"), "strategy": "preserve-relative-path", "content_transform": "antigravity-agent-frontmatter", "read_only": True},
+            ]}
+            result = apply_plan(plan, allow_writes=True, confirm_plan=build_state(plan)["plan_sha256"])
+            self.assertTrue(result["valid"])
+            self.assertEqual((target / "rules/security.mdc").read_text(encoding="utf-8"), "rule")
+            self.assertEqual(set(json.loads((target / "mcp.json").read_text(encoding="utf-8"))["mcpServers"]), {"old", "new"})
+            self.assertEqual(len(json.loads((target / "settings.json").read_text(encoding="utf-8"))["hooks"]["PreToolUse"]), 1)
+            transformed = (target / "agents/reviewer.md").read_text(encoding="utf-8")
+            self.assertIn("model: pro", transformed); self.assertNotIn("color:", transformed)
+
 
 if __name__ == "__main__":
     unittest.main()
