@@ -12,8 +12,11 @@ def _ecc_plan(root: Path, profile: str, target: str) -> Dict[str, Any]:
     try:
         output = subprocess.check_output(["node", "scripts/install-plan.js", "--profile", profile, "--target", target, "--json"], cwd=root, text=True, stderr=subprocess.STDOUT)
         return json.loads(output)
-    except (OSError, subprocess.CalledProcessError, json.JSONDecodeError) as error:
-        raise ValueError(f"cannot run ECC plan for {target}: {error}")
+    except subprocess.CalledProcessError as error:
+        detail = (error.output or "").strip()
+        raise ValueError(f"cannot run ECC plan for {target}: {detail or error}") from error
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"cannot run ECC plan for {target}: {error}") from error
 
 
 def compare_plan(ecc: Dict[str, Any], brecc: Dict[str, Any]) -> Dict[str, Any]:

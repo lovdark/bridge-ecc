@@ -42,5 +42,9 @@ jobs:
           repository: affaan-m/ECC
           path: ecc-upstream
 
+      - name: Build ECC OpenCode payload
+        working-directory: ecc-upstream
+        run: npm ci && npm run build:opencode
+
       - name: Compare all ECC targets
         run: brecc compat-report ecc-upstream developer --project-root ecc-upstream --json
