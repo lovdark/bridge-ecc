@@ -6,6 +6,7 @@ from typing import Any, Dict, Iterable, List
 FLATTEN_TARGETS = {"antigravity", "codebuddy", "joycode", "zed"}
 MERGE_JSON_TARGETS = {"cursor", "kimi"}
 HERMES_PLATFORM_PATHS = {".pi", "mcp-configs", "scripts/auto-update.js", "scripts/setup-package-manager.js", ".hermes"}
+COMMON_PLATFORM_PATHS = HERMES_PLATFORM_PATHS
 FLATTEN_MODULE_PATHS = {
     "rules-core": ("rules",),
     "agents-core": ("agents",),
@@ -31,7 +32,7 @@ def plan_operations(source: Path, target_info: Dict[str, str], module_id: str, p
             allowed = FLATTEN_MODULE_PATHS[module_id]
             if not any(raw == prefix or raw.startswith(prefix + "/") for prefix in allowed):
                 continue
-        if target == "hermes" and module_id == "platform-configs" and raw not in HERMES_PLATFORM_PATHS:
+        if target != "cursor" and target not in FLATTEN_TARGETS and module_id == "platform-configs" and raw not in COMMON_PLATFORM_PATHS:
             continue
         if relative.is_absolute() or ".." in relative.parts:
             continue
