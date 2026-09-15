@@ -8,6 +8,10 @@ from core.operations import plan_operations
 
 
 REQUIRED_MANIFESTS = ("install-profiles.json", "install-modules.json")
+TARGET_MODULE_EXCLUSIONS = {
+    "opencode": {"framework-language"},
+    "codex": {"framework-language", "orchestration"},
+}
 
 
 def _load(root: Path, name: str) -> Dict[str, Any]:
@@ -49,7 +53,7 @@ def resolve_profile(root: Path, profile: str, target: Optional[str] = None, home
         visited.add(module_id)
         module = modules[module_id]
         targets = module.get("targets", [])
-        if target and target not in targets:
+        if target and (target not in targets or module_id in TARGET_MODULE_EXCLUSIONS.get(target, set())):
             skipped.append(module_id)
             return
         for dependency in module.get("dependencies", []):
