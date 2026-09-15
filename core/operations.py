@@ -21,6 +21,9 @@ FLATTEN_MODULE_PATHS = {
     "platform-configs": (),
 }
 CURSOR_FLATTEN_MODULES = {"agents-core", "rules-core"}
+CURSOR_RULE_PATHS = {"angular", "arkts", "cpp", "csharp", "dart", "fsharp", "java", "nuxt", "perl", "react", "react-native", "ruby", "rust", "vue", "web"}
+CURSOR_RULE_EXCEPTIONS = {"rules/common/code-review.md", "rules/python/fastapi.md"}
+CURSOR_PLATFORM_PATHS = {".cursor", ".pi", "mcp-configs", "scripts/auto-update.js", "scripts/setup-package-manager.js"}
 
 
 def _files(source: Path, relative: Path) -> Iterable[Path]:
@@ -36,6 +39,16 @@ def plan_operations(source: Path, target_info: Dict[str, str], module_id: str, p
     operations: List[Dict[str, Any]] = []
     for raw in paths:
         relative = Path(raw)
+        if target == "cursor" and module_id == "rules-core" and raw.startswith("rules/"):
+            parts = relative.parts
+            if raw not in CURSOR_RULE_EXCEPTIONS and (len(parts) < 2 or parts[1] not in CURSOR_RULE_PATHS):
+                continue
+        if target == "cursor" and module_id == "agents-core" and raw == "AGENTS.md":
+            continue
+        if target == "cursor" and module_id == "hooks-runtime" and raw == "hooks":
+            continue
+        if target == "cursor" and module_id == "platform-configs" and raw not in CURSOR_PLATFORM_PATHS and not raw.startswith(".cursor/rules") and raw != ".mcp.json":
+            continue
         if target in FLATTEN_TARGETS and module_id in FLATTEN_MODULE_PATHS:
             allowed = FLATTEN_MODULE_PATHS[module_id]
             if not any(raw == prefix or raw.startswith(prefix + "/") for prefix in allowed):
@@ -125,6 +138,10 @@ def plan_operations(source: Path, target_info: Dict[str, str], module_id: str, p
             continue
         for file_path in _files(source, relative):
             file_relative = file_path.relative_to(source)
+            if target == "cursor" and module_id == "rules-core" and file_relative.parts and file_relative.parts[0] == "rules":
+                parts = file_relative.parts
+                if file_relative.as_posix() not in CURSOR_RULE_EXCEPTIONS and (len(parts) < 3 or parts[1] not in CURSOR_RULE_PATHS):
+                    continue
             cursor_rule = target == "cursor" and file_relative.parts and (file_relative.parts[0] == "rules" or file_relative.parts[:2] == (".cursor", "rules"))
             cursor_agent = target == "cursor" and file_relative.parts and file_relative.parts[0] == "agents"
             if target in FLATTEN_TARGETS and file_relative.parts and file_relative.parts[0] == "rules":
