@@ -1,0 +1,12 @@
+[
+  {"name": "plain listing", "command": "Get-ChildItem ./src", "decision": "allow"},
+  {"name": "read-only git status", "command": "git status --short", "decision": "allow"},
+  {"name": "network request", "command": "Invoke-WebRequest https://example.com", "decision": "review"},
+  {"name": "privileged service control", "command": "sudo systemctl restart app", "decision": "review"},
+  {"name": "powershell flags reversed", "command": "Remove-Item ./build -Force -Recurse", "decision": "deny"},
+  {"name": "shell deletion in pipeline", "command": "printf ready | rm -rf ./tmp", "decision": "deny"},
+  {"name": "forced git push", "command": "git push origin main --force", "decision": "deny"},
+  {"name": "container cleanup", "command": "docker system prune --all", "decision": "deny"},
+  {"name": "dynamic shell substitution", "command": "echo $(rm -rf ./cache)", "decision": "deny"},
+  {"name": "dynamic powershell evaluation", "command": "Invoke-Expression $script", "decision": "review"}
+]

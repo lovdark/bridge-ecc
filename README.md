@@ -4,7 +4,7 @@ BridgeECC (BRECC) is an independent, ECC-compatible bridge for cross-harness wor
 
 ## Project status
 
-Runnable Python-first compatibility MVP: `brecc analyze`, `brecc catalog`, `brecc validate`, `brecc doctor`, and `brecc adapters` provide policy, discovery, validation, diagnostics, and adapter capability contracts. The analyzer is advisory only; it never executes a command. The runtime uses only the Python standard library and does not require Node.js.
+Runnable Python-first compatibility MVP: `brecc analyze`, `brecc catalog`, `brecc validate`, `brecc doctor`, and `brecc adapters` provide policy, discovery, validation, diagnostics, and adapter capability contracts. The analyzer is advisory only; it never executes a command. Golden policy fixtures cover safe, review, chained, dynamic, Git, container, infrastructure, PowerShell, and shell cases. The runtime uses only the Python standard library and does not require Node.js.
 
 ## Design goals
 
@@ -51,7 +51,7 @@ python3 bin/brecc.py validate /path/to/ecc --json
 
 Exit status is `0` for allow/review, `1` for deny, and `2` for invalid CLI input. Review findings cover network, privilege, process-control, and dynamic-evaluation operations. Destructive operations and analysis-budget violations deny by default.
 
-Node.js is an optional compatibility adapter for ECC scripts that have not yet been ported. It uses argument arrays, never shell interpolation, and reports a clear unavailable result when Node is absent. Python is the canonical implementation and test path.
+Node.js is an optional compatibility adapter for ECC scripts that have not yet been ported. It uses argument arrays, never shell interpolation, and reports a clear unavailable result when Node is absent. Python is the canonical implementation and test path. The policy layer denies destructive Git, container, infrastructure, disk, deletion, and shutdown operations; it reviews network, privilege, process-control, and dynamic-evaluation operations.
 
 ## License
 

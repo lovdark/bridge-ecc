@@ -14,11 +14,13 @@ class Rule:
     reason: str
 
 DENY_RULES = (
-    Rule("powershell-remove-force", re.compile(r"\b(remove-item|ri|del|erase)\b[^\r\n]*\s-(?:recurse|r)\b[^\r\n]*\s-(?:force|f)\b", re.I), "recursive forced deletion"),
-    Rule("shell-rm-rf", re.compile(r"(^|[;&|])\s*rm\s+(?:-[^\s]+\s+)*-rf\b", re.I), "recursive forced deletion"),
+    Rule("powershell-remove-force", re.compile(r"\b(remove-item|ri|del|erase)\b(?=[^\r\n]*\s-(?:recurse|r)\b)(?=[^\r\n]*\s-(?:force|f)\b)[^\r\n]*", re.I), "recursive forced deletion"),
+    Rule("shell-rm-rf", re.compile(r"\brm\s+(?:-[^\s]+\s+)*-rf\b", re.I), "recursive forced deletion"),
     Rule("powershell-format", re.compile(r"\bformat-volume\b|\bformat\s+[a-z]:", re.I), "disk formatting"),
     Rule("powershell-shutdown", re.compile(r"\b(stop-computer|restart-computer|shutdown|reboot)\b", re.I), "system shutdown or restart"),
-    Rule("git-destructive-reset", re.compile(r"\bgit\s+reset\s+--hard\b|\bgit\s+clean\s+-fd\b", re.I), "destructive git operation"),
+    Rule("git-destructive-reset", re.compile(r"\bgit\s+reset\s+--hard\b|\bgit\s+clean\s+-d(?:f|x|fx|xf)\b|\bgit\s+push\b[^\r\n]*\s(?:--force|-f)\b", re.I), "destructive git operation"),
+    Rule("container-prune", re.compile(r"\bdocker\s+system\s+prune\b|\bpodman\s+system\s+prune\b", re.I), "destructive container cleanup"),
+    Rule("orchestrator-delete", re.compile(r"\bkubectl\s+delete\b|\bterraform\s+destroy\b", re.I), "infrastructure deletion"),
     Rule("disk-wipe", re.compile(r"\b(dd\s+if=|diskpart\b|clear-disk\b|wipefs\b)", re.I), "disk or partition modification"),
 )
 
@@ -26,7 +28,7 @@ REVIEW_RULES = (
     Rule("network-write", re.compile(r"\b(invoke-webrequest|invoke-restmethod|curl|wget|bitsadmin|scp|ftp)\b", re.I), "network access may transfer data"),
     Rule("permission-change", re.compile(r"\b(set-acl|icacls|chmod|chown|sudo)\b", re.I), "permission or privilege change"),
     Rule("process-control", re.compile(r"\b(stop-process|kill|taskkill|launchctl|systemctl)\b", re.I), "process or service control"),
-    Rule("shell-evaluation", re.compile(r"\b(invoke-expression|iex|eval)\b|\$\([^)]*\)", re.I), "dynamic command evaluation"),
+    Rule("shell-evaluation", re.compile(r"\b(invoke-expression|iex|eval)\b|\$\([^)]*\)|`[^`\r\n]+`", re.I), "dynamic command evaluation"),
 )
 
 
