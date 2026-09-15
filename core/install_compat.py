@@ -64,4 +64,4 @@ def resolve_profile(root: Path, profile: str, target: Optional[str] = None, home
                     operations.append({"module": module_id, "source": relative, "target": relative, "strategy": "preserve-relative-path", "read_only": True})
     for module_id in module_ids:
         select(module_id)
-    return {"valid": True, "profile": profile, "description": selected.get("description", ""), "target": target, "target_info": target_info, "modules": chosen, "skipped_modules": skipped, "operations": operations, "write_required": bool(operations)}
+    return {"valid": True, "profile": profile, "description": selected.get("description", ""), "source_root": str(root), "target": target, "target_info": target_info, "modules": chosen, "skipped_modules": skipped, "operations": operations, "write_required": bool(operations)}

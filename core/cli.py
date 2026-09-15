@@ -16,6 +16,7 @@ from core.policy import inspect_command
 from core.install_plan import build_install_plan
 from core.install_compat import list_profiles, resolve_profile
 from core.install_state import build_state, verify_dry_run
+from core.apply import apply_plan
 from core.validate import validate_tree
 
 
@@ -71,6 +72,9 @@ def build_parser() -> argparse.ArgumentParser:
     apply_plan.add_argument("--home-dir", type=Path)
     apply_plan.add_argument("--project-root", type=Path)
     apply_plan.add_argument("--dry-run", action="store_true")
+    apply_plan.add_argument("--allow-writes", action="store_true")
+    apply_plan.add_argument("--confirm-plan")
+    apply_plan.add_argument("--overwrite", action="store_true")
     apply_plan.add_argument("--json", action="store_true")
     adapters = subparsers.add_parser("adapters", help="report optional adapter capabilities")
     adapters.add_argument("--json", action="store_true")
@@ -128,8 +132,10 @@ def main(argv: Optional[List[str]] = None) -> int:
                 result = plan
             elif args.action == "state":
                 result = build_state(plan)
-            else:
+            elif args.dry_run:
                 result = verify_dry_run(plan, dry_run=args.dry_run)
+            else:
+                result = apply_plan(plan, allow_writes=args.allow_writes, confirm_plan=args.confirm_plan or "", overwrite=args.overwrite)
         except ValueError as error:
             result = {"valid": False, "error": str(error)}
         emit(result, args.json)

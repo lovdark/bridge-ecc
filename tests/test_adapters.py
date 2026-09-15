@@ -14,6 +14,7 @@ from core.install_plan import build_install_plan
 from core.install_compat import list_profiles, resolve_profile
 from core.operations import plan_operations
 from core.install_state import build_state, verify_dry_run
+from core.apply import apply_plan
 from core.targets import resolve_target
 from core.validate import validate_tree
 
@@ -153,6 +154,22 @@ class AdapterTests(unittest.TestCase):
         self.assertFalse(result["write_enabled"])
         self.assertEqual(result["operation_count"], 1)
         self.assertFalse(verify_dry_run(plan, dry_run=False)["valid"])
+
+    def test_apply_requires_gates_and_writes_fixture_atomically(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "source"
+            target = root / "target"
+            (source / "rules").mkdir(parents=True)
+            (source / "rules/a.md").write_text("rule", encoding="utf-8")
+            plan = {"profile": "core", "target": "hermes", "source_root": str(source), "target_info": {"root": str(target)}, "modules": ["rules"], "operations": [{"module": "rules", "source": "rules/a.md", "target": str(target / "rules/a.md"), "strategy": "preserve-relative-path", "read_only": True}]}
+            self.assertFalse(apply_plan(plan, allow_writes=False)["valid"])
+            digest = build_state(plan)["plan_sha256"]
+            result = apply_plan(plan, allow_writes=True, confirm_plan=digest)
+            self.assertTrue(result["valid"])
+            self.assertEqual((target / "rules/a.md").read_text(encoding="utf-8"), "rule")
+            self.assertTrue(Path(result["state_file"]).is_file())
+            self.assertFalse(apply_plan(plan, allow_writes=True, confirm_plan="wrong")["valid"])
 
 
 if __name__ == "__main__":
