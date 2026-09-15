@@ -7,6 +7,12 @@ FLATTEN_TARGETS = {"antigravity", "codebuddy", "joycode", "zed"}
 MERGE_JSON_TARGETS = {"cursor", "kimi"}
 HERMES_PLATFORM_PATHS = {".pi", "mcp-configs", "scripts/auto-update.js", "scripts/setup-package-manager.js", ".hermes"}
 COMMON_PLATFORM_PATHS = HERMES_PLATFORM_PATHS
+TARGET_PLATFORM_PATHS = {
+    "claude": (COMMON_PLATFORM_PATHS - {".hermes"}) | {".claude-plugin"},
+    "claude-project": (COMMON_PLATFORM_PATHS - {".hermes"}) | {".claude-plugin"},
+    "opencode": (COMMON_PLATFORM_PATHS - {".hermes"}) | {".opencode"},
+    "codex": (COMMON_PLATFORM_PATHS - {".hermes"}) | {".codex"},
+}
 KIMI_PLATFORM_PATHS = (COMMON_PLATFORM_PATHS - {".hermes"}) | {".kimi"}
 FLATTEN_MODULE_PATHS = {
     "rules-core": ("rules",),
@@ -33,7 +39,7 @@ def plan_operations(source: Path, target_info: Dict[str, str], module_id: str, p
             allowed = FLATTEN_MODULE_PATHS[module_id]
             if not any(raw == prefix or raw.startswith(prefix + "/") for prefix in allowed):
                 continue
-        allowed_platform = KIMI_PLATFORM_PATHS if target == "kimi" else COMMON_PLATFORM_PATHS
+        allowed_platform = KIMI_PLATFORM_PATHS if target == "kimi" else TARGET_PLATFORM_PATHS.get(target, COMMON_PLATFORM_PATHS)
         if target != "cursor" and target not in FLATTEN_TARGETS and module_id == "platform-configs" and raw not in allowed_platform:
             continue
         if relative.is_absolute() or ".." in relative.parts:
@@ -57,6 +63,16 @@ def plan_operations(source: Path, target_info: Dict[str, str], module_id: str, p
                 continue
             operations.append({"kind": "copy-path", "module": module_id, "source": ".agents/skills", "target": str(root / ".agents/skills"), "strategy": "preserve-relative-path", "ownership": "managed", "read_only": True})
             continue
+        if target in {"claude", "claude-project"} and module_id == "hooks-runtime" and relative == Path("hooks") and source_path.is_dir():
+            for child_name in ("hooks/hooks.json", "hooks/codex-hooks.json", "hooks/memory-persistence", "hooks/README.md"):
+                child = source / child_name
+                if not child.exists():
+                    continue
+                if child_name == "hooks/hooks.json":
+                    operations.append({"kind": "update-claude-settings", "module": module_id, "source": child_name, "target": str(root / "settings.json"), "strategy": "merge-hook-ids", "ownership": "managed", "read_only": True})
+                else:
+                    operations.append({"kind": "copy-path", "module": module_id, "source": child_name, "target": str(root / child_name), "strategy": "preserve-relative-path", "ownership": "managed", "read_only": True})
+            continue
         if target in FLATTEN_TARGETS and module_id in {"agents-core", "commands-core"} and relative in {Path("agents"), Path("commands")} and source_path.is_dir():
             destination = root / ("workflows" if relative == Path("commands") else "agents")
             operation = {"kind": "copy-path", "module": module_id, "source": raw, "target": str(destination), "strategy": "preserve-relative-path", "ownership": "managed", "read_only": True}
@@ -65,7 +81,8 @@ def plan_operations(source: Path, target_info: Dict[str, str], module_id: str, p
             operations.append(operation)
             continue
         if source_path.is_dir() and target not in FLATTEN_TARGETS and target != "cursor":
-            strategy = "sync-root-children" if ((target == "hermes" and relative == Path(".hermes")) or (target == "kimi" and relative == Path(".kimi"))) else "preserve-relative-path"
+            sync_paths = {"hermes": Path(".hermes"), "kimi": Path(".kimi"), "claude": Path(".claude-plugin"), "claude-project": Path(".claude-plugin"), "opencode": Path(".opencode"), "codex": Path(".codex")}
+            strategy = "sync-root-children" if sync_paths.get(target) == relative else "preserve-relative-path"
             operations.append({"kind": "copy-path", "module": module_id, "source": raw, "target": str(root / relative), "strategy": strategy, "ownership": "managed", "read_only": True})
             if target == "kimi" and module_id == "platform-configs" and raw == "mcp-configs" and (source / ".mcp.json").is_file():
                 try:
