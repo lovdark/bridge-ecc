@@ -2,9 +2,10 @@
 # Fail-closed Hermes repair and recovery wrapper for BRECC.
 set -euo pipefail
 
-TARGET_ROOT="${BRECC_HERMES_ROOT:-/root/.hermes}"
-BACKUP_ROOT="${BRECC_BACKUP_ROOT:-/root/backups}"
-ECC_ROOT="${BRECC_ECC_ROOT:-/tmp/ecc-latest}"
+TARGET_ROOT="${BRECC_HERMES_ROOT:-${HOME}/.hermes}"
+BACKUP_ROOT="${BRECC_BACKUP_ROOT:-${HOME}/backups}"
+ECC_ROOT="${BRECC_ECC_ROOT:-${TMPDIR:-/tmp}/ecc-latest}"
+PROJECT_ROOT="${BRECC_PROJECT_ROOT:-${HOME}/projects}"
 PROFILE="${BRECC_PROFILE:-developer}"
 TARGET="${BRECC_TARGET:-hermes}"
 
@@ -18,9 +19,10 @@ Usage:
   hermes-repair.sh restore BACKUP_ARCHIVE CONFIRM_RESTORE
 
 Environment overrides:
-  BRECC_HERMES_ROOT  (default: /root/.hermes)
-  BRECC_BACKUP_ROOT  (default: /root/backups)
+  BRECC_HERMES_ROOT  (default: $HOME/.hermes)
+  BRECC_BACKUP_ROOT  (default: $HOME/backups)
   BRECC_ECC_ROOT     (default: /tmp/ecc-latest)
+  BRECC_PROJECT_ROOT (default: $HOME/projects)
   BRECC_PROFILE      (default: developer)
   BRECC_TARGET       (default: hermes)
 
@@ -69,7 +71,7 @@ diagnose() {
 
 plan() {
   require_source
-  local args=("$ECC_ROOT" "$PROFILE" --target "$TARGET" --home-dir "${TARGET_ROOT%/.hermes}" --project-root /root/projects)
+  local args=("$ECC_ROOT" "$PROFILE" --target "$TARGET" --home-dir "$(dirname "$TARGET_ROOT")" --project-root "$PROJECT_ROOT")
   [[ "${1:-}" == '--json' ]] && args+=(--json)
   python3 -m brecc ecc-plan "${args[@]}"
 }
@@ -79,7 +81,7 @@ apply_plan() {
   [[ "${1:-}" =~ ^[0-9a-f]{64}$ ]] || fail 'apply requires a 64-character hexadecimal plan hash'
   backup
   python3 -m brecc apply-plan "$ECC_ROOT" "$PROFILE" --target "$TARGET" \
-    --home-dir "${TARGET_ROOT%/.hermes}" --project-root /root/projects \
+    --home-dir "$(dirname "$TARGET_ROOT")" --project-root "$PROJECT_ROOT" \
     --allow-writes --confirm-plan "$1" --json
 }
 

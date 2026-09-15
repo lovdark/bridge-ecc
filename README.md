@@ -68,7 +68,7 @@ Supported target roots currently mirror ECC’s registry: Claude, Cursor, Antigr
 
 `state` emits a deterministic managed-state record with a plan hash. `apply-plan --dry-run` verifies and previews operations without enabling writes. A write requires both `--allow-writes` and an exact `--confirm-plan` hash.
 
-For live Hermes recovery, `scripts/hermes-repair.sh` defaults to diagnosis. `backup` creates a timestamped, checksum-verified local archive excluding credentials, logs, caches, and project trees. `apply HASH` creates that backup before invoking the guarded BRECC apply. `restore ARCHIVE RESTORE-HERMES` validates the archive, quarantines the current Hermes directory, and restores the archive; cavedoor upload remains a separate explicit operation.
+For live Hermes recovery, `scripts/hermes-repair.sh` is a portable BRECC utility; it uses `$HOME/.hermes`, `$HOME/backups`, and `$HOME/projects` by default and accepts `BRECC_*` environment overrides. The cave installs a configured copy at `/root/.hermes/scripts/hermes-repair.sh`. It defaults to diagnosis. `backup` creates a timestamped, checksum-verified local archive excluding credentials, logs, caches, and project trees. `apply HASH` creates that backup before invoking the guarded BRECC apply. `restore ARCHIVE RESTORE-HERMES` validates the archive, quarantines the current Hermes directory, and restores the archive; cavedoor upload remains a separate explicit operation.
 
 Target operation planning remains read-only; guarded application is available only through explicit flags and an exact plan hash. Common strategies, Claude hook merging, and Antigravity content transforms are covered by temporary-fixture tests.
 
