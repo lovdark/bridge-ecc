@@ -184,6 +184,21 @@ class AdapterTests(unittest.TestCase):
             self.assertFalse(result["valid"])
             self.assertFalse((root / "outside.md").exists())
 
+    def test_apply_merges_claude_hook_ids_without_replacing_settings(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); source = root / "source"; target = root / "target"
+            source.mkdir(); target.mkdir()
+            hook = {"matcher": "Bash", "hooks": [{"type": "command", "command": "check"}]}
+            (source / "hooks.json").write_text(json.dumps({"hooks": {"PreToolUse": [hook]}}), encoding="utf-8")
+            settings = target / "settings.json"
+            settings.write_text(json.dumps({"theme": "dark", "hooks": {"PreToolUse": [hook]}}), encoding="utf-8")
+            plan = {"profile": "core", "target": "claude", "source_root": str(source), "target_info": {"root": str(target)}, "modules": ["hooks"], "operations": [{"kind": "update-claude-settings", "module": "hooks", "source": "hooks.json", "target": str(settings), "strategy": "merge-hook-ids", "read_only": True}]}
+            result = apply_plan(plan, allow_writes=True, confirm_plan=build_state(plan)["plan_sha256"])
+            self.assertTrue(result["valid"])
+            merged = json.loads(settings.read_text(encoding="utf-8"))
+            self.assertEqual(merged["theme"], "dark")
+            self.assertEqual(len(merged["hooks"]["PreToolUse"]), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

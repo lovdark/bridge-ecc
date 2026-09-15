@@ -74,7 +74,7 @@ def apply_plan(plan: Dict[str, Any], *, allow_writes: bool, confirm_plan: str = 
             return {"valid": False, "write_enabled": False, "error": f"target escapes target root: {destination}"}
         if destination.exists() and destination.is_symlink():
             return {"valid": False, "write_enabled": False, "error": f"refusing symlink target: {destination}"}
-        if operation["strategy"] == "merge-json":
+        if operation["strategy"] in {"merge-json", "merge-hook-ids"}:
             if not source.is_file():
                 return {"valid": False, "write_enabled": False, "error": f"source disappeared: {source}"}
             try:
@@ -82,14 +82,35 @@ def apply_plan(plan: Dict[str, Any], *, allow_writes: bool, confirm_plan: str = 
                 existing = json.loads(destination.read_text(encoding="utf-8")) if destination.is_file() else {}
             except (OSError, UnicodeError, json.JSONDecodeError) as error:
                 return {"valid": False, "write_enabled": False, "error": f"invalid JSON during preflight: {error}"}
-            if not isinstance(incoming, dict) or not isinstance(existing, dict):
+            if operation["strategy"] == "merge-hook-ids":
+                incoming = incoming.get("hooks") if isinstance(incoming, dict) else None
+                if not isinstance(incoming, dict):
+                    return {"valid": False, "write_enabled": False, "error": "Claude hook merge requires a hooks object"}
+                existing_hooks = existing.get("hooks", {})
+                if not isinstance(existing_hooks, dict):
+                    return {"valid": False, "write_enabled": False, "error": "existing Claude settings hooks must be an object"}
+                merged = dict(existing)
+                merged["hooks"] = dict(existing_hooks)
+                for event, entries in incoming.items():
+                    if not isinstance(entries, list):
+                        return {"valid": False, "write_enabled": False, "error": f"Claude hook event must be a list: {event}"}
+                    current = list(merged["hooks"].get(event, []))
+                    seen = {json.dumps(item, sort_keys=True, separators=(",", ":")) for item in current}
+                    for item in entries:
+                        marker = json.dumps(item, sort_keys=True, separators=(",", ":"))
+                        if marker not in seen:
+                            current.append(item)
+                            seen.add(marker)
+                    merged["hooks"][event] = current
+            elif not isinstance(incoming, dict) or not isinstance(existing, dict):
                 return {"valid": False, "write_enabled": False, "error": "JSON merge requires object values"}
-            merged = dict(existing)
-            for key, value in incoming.items():
-                if isinstance(value, dict) and isinstance(merged.get(key), dict):
-                    merged[key] = {**merged[key], **value}
-                else:
-                    merged[key] = value
+            else:
+                merged = dict(existing)
+                for key, value in incoming.items():
+                    if isinstance(value, dict) and isinstance(merged.get(key), dict):
+                        merged[key] = {**merged[key], **value}
+                    else:
+                        merged[key] = value
             data = (json.dumps(merged, indent=2, sort_keys=True) + "\n").encode("utf-8")
             writes.append((destination, data))
         else:
@@ -110,8 +131,9 @@ def apply_plan(plan: Dict[str, Any], *, allow_writes: bool, confirm_plan: str = 
     total_bytes = sum(len(data) for _, data in writes)
     if total_bytes > MAX_BYTES:
         return {"valid": False, "write_enabled": False, "error": f"byte limit exceeded: {total_bytes} > {MAX_BYTES}"}
+    merge_destinations = {Path(item["target"]).expanduser() for item in plan.get("operations", []) if item.get("strategy") in {"merge-json", "merge-hook-ids"}}
     for destination, _ in writes:
-        if destination.exists() and not overwrite and destination != state_path:
+        if destination.exists() and not overwrite and destination != state_path and destination not in merge_destinations:
             return {"valid": False, "write_enabled": False, "error": f"refusing to overwrite existing path: {destination}"}
     if state_path.exists() and state_path.is_symlink():
         return {"valid": False, "write_enabled": False, "error": f"refusing symlink state file: {state_path}"}
