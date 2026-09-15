@@ -70,6 +70,8 @@ Supported target roots currently mirror ECC’s registry: Claude, Cursor, Antigr
 
 Target operation planning is intentionally still read-only. The common strategies are implemented, but some harness-specific transforms and exact operation counts remain under compatibility testing before an apply phase is enabled.
 
+Compatibility status: the `developer`/`hermes` profile matches ECC's selected modules, skipped modules, operation count, and strategy distribution. Flatten-target path routing and preserved agent/workflow directory descriptors are implemented; target-specific skill selection and content transforms remain under comparison.
+
 ## License
 
 MIT. See `LICENSE`.

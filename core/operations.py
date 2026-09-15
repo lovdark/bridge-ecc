@@ -6,6 +6,12 @@ from typing import Any, Dict, Iterable, List
 FLATTEN_TARGETS = {"antigravity", "codebuddy", "joycode", "zed"}
 MERGE_JSON_TARGETS = {"cursor", "kimi"}
 HERMES_PLATFORM_PATHS = {".pi", "mcp-configs", "scripts/auto-update.js", "scripts/setup-package-manager.js", ".hermes"}
+FLATTEN_MODULE_PATHS = {
+    "rules-core": ("rules",),
+    "agents-core": ("agents",),
+    "commands-core": ("commands",),
+    "platform-configs": (),
+}
 
 
 def _files(source: Path, relative: Path) -> Iterable[Path]:
@@ -21,6 +27,10 @@ def plan_operations(source: Path, target_info: Dict[str, str], module_id: str, p
     operations: List[Dict[str, Any]] = []
     for raw in paths:
         relative = Path(raw)
+        if target in FLATTEN_TARGETS and module_id in FLATTEN_MODULE_PATHS:
+            allowed = FLATTEN_MODULE_PATHS[module_id]
+            if not any(raw == prefix or raw.startswith(prefix + "/") for prefix in allowed):
+                continue
         if target == "hermes" and module_id == "platform-configs" and raw not in HERMES_PLATFORM_PATHS:
             continue
         if relative.is_absolute() or ".." in relative.parts:
@@ -37,6 +47,13 @@ def plan_operations(source: Path, target_info: Dict[str, str], module_id: str, p
             continue
         source_path = source / relative
         if not source_path.exists():
+            continue
+        if target in FLATTEN_TARGETS and module_id in {"agents-core", "commands-core"} and relative in {Path("agents"), Path("commands")} and source_path.is_dir():
+            destination = root / ("workflows" if relative == Path("commands") else "agents")
+            operation = {"kind": "copy-path", "module": module_id, "source": raw, "target": str(destination), "strategy": "preserve-relative-path", "ownership": "managed", "read_only": True}
+            if target == "antigravity" and relative == Path("agents"):
+                operation["content_transform"] = "antigravity-agent-frontmatter"
+            operations.append(operation)
             continue
         if source_path.is_dir() and target not in FLATTEN_TARGETS and target != "cursor":
             strategy = "sync-root-children" if target == "hermes" and relative == Path(".hermes") else "preserve-relative-path"
