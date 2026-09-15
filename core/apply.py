@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 from core.install_state import build_state
+from core.transforms import adapt_antigravity_agent
 
 MAX_OPERATIONS = 10_000
 MAX_BYTES = 50 * 1024 * 1024
@@ -125,7 +126,10 @@ def apply_plan(plan: Dict[str, Any], *, allow_writes: bool, confirm_plan: str = 
                     return {"valid": False, "write_enabled": False, "error": f"target escapes target root: {destination_file}"}
                 if destination_file.exists() and destination_file.is_symlink():
                     return {"valid": False, "write_enabled": False, "error": f"refusing symlink target: {destination_file}"}
-                writes.append((destination_file, child.read_bytes()))
+                data = child.read_bytes()
+                if operation.get("content_transform") == "antigravity-agent-frontmatter" and child.suffix.lower() in {".md", ".mdx", ".markdown"}:
+                    data = adapt_antigravity_agent(data, str(child))
+                writes.append((destination_file, data))
     if len(writes) > MAX_OPERATIONS:
         return {"valid": False, "write_enabled": False, "error": f"operation limit exceeded: {len(writes)} > {MAX_OPERATIONS}"}
     total_bytes = sum(len(data) for _, data in writes)

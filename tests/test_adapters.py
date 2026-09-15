@@ -15,6 +15,7 @@ from core.install_compat import list_profiles, resolve_profile
 from core.operations import plan_operations
 from core.install_state import build_state, verify_dry_run
 from core.apply import apply_plan
+from core.transforms import adapt_antigravity_agent
 from core.targets import resolve_target
 from core.validate import validate_tree
 
@@ -198,6 +199,14 @@ class AdapterTests(unittest.TestCase):
             merged = json.loads(settings.read_text(encoding="utf-8"))
             self.assertEqual(merged["theme"], "dark")
             self.assertEqual(len(merged["hooks"]["PreToolUse"]), 1)
+
+    def test_antigravity_transform_maps_tools_model_and_removes_color(self):
+        source = b"---\nname: reviewer\ncolor: blue\ntools: [Read, Bash, Unknown]\nmodel: sonnet\n---\nPrompt\n"
+        result = adapt_antigravity_agent(source).decode("utf-8")
+        self.assertNotIn("color:", result)
+        self.assertIn("  - view_file", result)
+        self.assertIn("  - run_command", result)
+        self.assertIn("model: pro", result)
 
 
 if __name__ == "__main__":
