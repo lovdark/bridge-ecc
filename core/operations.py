@@ -105,6 +105,9 @@ def plan_operations(source: Path, target_info: Dict[str, str], module_id: str, p
                     operation["merge_payload"] = merge_payload
                 operations.append(operation)
             continue
+        if target in FLATTEN_TARGETS and relative.parts[:1] == ("skills",) and source_path.is_dir():
+            operations.append({"kind": "copy-path", "module": module_id, "source": raw, "target": str(root / relative), "strategy": "preserve-relative-path", "ownership": "managed", "read_only": True})
+            continue
         if target in {"claude", "claude-project"} and module_id == "hooks-runtime" and relative == Path("hooks") and source_path.is_dir():
             for child_name in ("hooks/hooks.json", "hooks/codex-hooks.json", "hooks/memory-persistence", "hooks/README.md"):
                 child = source / child_name
