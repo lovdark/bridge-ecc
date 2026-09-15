@@ -17,6 +17,7 @@ from core.install_plan import build_install_plan
 from core.install_compat import list_profiles, resolve_profile
 from core.install_state import build_state, verify_dry_run
 from core.apply import apply_plan
+from core.compat_report import DEFAULT_TARGETS, compatibility_report
 from core.validate import validate_tree
 
 
@@ -76,6 +77,12 @@ def build_parser() -> argparse.ArgumentParser:
     apply_plan.add_argument("--confirm-plan")
     apply_plan.add_argument("--overwrite", action="store_true")
     apply_plan.add_argument("--json", action="store_true")
+    compat = subparsers.add_parser("compat-report", help="compare BRECC plans with ECC plans")
+    compat.add_argument("root", type=Path)
+    compat.add_argument("profile")
+    compat.add_argument("--target", action="append", dest="targets")
+    compat.add_argument("--project-root", type=Path)
+    compat.add_argument("--json", action="store_true")
     adapters = subparsers.add_parser("adapters", help="report optional adapter capabilities")
     adapters.add_argument("--json", action="store_true")
     return parser
@@ -140,6 +147,13 @@ def main(argv: Optional[List[str]] = None) -> int:
             result = {"valid": False, "error": str(error)}
         emit(result, args.json)
         return 0 if result.get("valid") else 1
+    if args.action == "compat-report":
+        try:
+            result = compatibility_report(args.root, args.profile, args.targets or DEFAULT_TARGETS, project_root=args.project_root)
+        except ValueError as error:
+            result = {"valid": False, "error": str(error)}
+        emit(result, args.json)
+        return 0 if result.get("target_count", 0) == result.get("exact_target_count", -1) else 1
     if args.action == "doctor":
         result = {"runtime": runtime_status(), "repository": repository_status(args.root)}
         emit(result, args.json)

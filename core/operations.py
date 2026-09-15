@@ -12,6 +12,9 @@ TARGET_PLATFORM_PATHS = {
     "claude-project": (COMMON_PLATFORM_PATHS - {".hermes"}) | {".claude-plugin"},
     "opencode": (COMMON_PLATFORM_PATHS - {".hermes"}) | {".opencode"},
     "codex": (COMMON_PLATFORM_PATHS - {".hermes"}) | {".codex"},
+    "gemini": (COMMON_PLATFORM_PATHS - {".hermes"}) | {".gemini"},
+    "openclaw": (COMMON_PLATFORM_PATHS - {".hermes"}) | {".openclaw"},
+    "qwen": (COMMON_PLATFORM_PATHS - {".hermes"}) | {".qwen"},
 }
 KIMI_PLATFORM_PATHS = (COMMON_PLATFORM_PATHS - {".hermes"}) | {".kimi"}
 FLATTEN_MODULE_PATHS = {
@@ -136,7 +139,7 @@ def plan_operations(source: Path, target_info: Dict[str, str], module_id: str, p
             operations.append(operation)
             continue
         if source_path.is_dir() and (target not in FLATTEN_TARGETS and (target != "cursor" or module_id not in CURSOR_FLATTEN_MODULES)):
-            sync_paths = {"hermes": Path(".hermes"), "kimi": Path(".kimi"), "claude": Path(".claude-plugin"), "claude-project": Path(".claude-plugin"), "opencode": Path(".opencode"), "codex": Path(".codex")}
+            sync_paths = {"hermes": Path(".hermes"), "kimi": Path(".kimi"), "claude": Path(".claude-plugin"), "claude-project": Path(".claude-plugin"), "opencode": Path(".opencode"), "codex": Path(".codex"), "gemini": Path(".gemini"), "openclaw": Path(".openclaw"), "qwen": Path(".qwen")}
             strategy = "sync-root-children" if sync_paths.get(target) == relative else "preserve-relative-path"
             operations.append({"kind": "copy-path", "module": module_id, "source": raw, "target": str(root / relative), "strategy": strategy, "ownership": "managed", "read_only": True})
             if target == "kimi" and module_id == "platform-configs" and raw == "mcp-configs" and (source / ".mcp.json").is_file():
