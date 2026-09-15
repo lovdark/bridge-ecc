@@ -20,6 +20,7 @@ FLATTEN_MODULE_PATHS = {
     "commands-core": ("commands",),
     "platform-configs": (),
 }
+CURSOR_FLATTEN_MODULES = {"agents-core", "rules-core"}
 
 
 def _files(source: Path, relative: Path) -> Iterable[Path]:
@@ -63,6 +64,34 @@ def plan_operations(source: Path, target_info: Dict[str, str], module_id: str, p
                 continue
             operations.append({"kind": "copy-path", "module": module_id, "source": ".agents/skills", "target": str(root / ".agents/skills"), "strategy": "preserve-relative-path", "ownership": "managed", "read_only": True})
             continue
+        if target == "cursor" and module_id == "agents-core" and relative == Path(".agents") and source_path.is_dir():
+            operations.append({"kind": "copy-path", "module": module_id, "source": raw, "target": str(root / relative), "strategy": "preserve-relative-path", "ownership": "managed", "read_only": True})
+            continue
+        if target == "cursor" and module_id == "platform-configs" and relative == Path(".cursor/rules") and source_path.is_dir():
+            for child in sorted(item for item in source_path.rglob("*") if item.is_file()):
+                flattened = "-".join(child.relative_to(source_path).parts)
+                operations.append({"kind": "copy-path", "module": module_id, "source": child.relative_to(source).as_posix(), "target": str(root / "rules" / (Path(flattened).stem + ".mdc")), "strategy": "flatten-copy", "ownership": "managed", "read_only": True})
+            continue
+        if target == "cursor" and module_id == "platform-configs" and relative == Path(".cursor") and source_path.is_dir():
+            for child_name in (".cursor/hooks", ".cursor/hooks.json", ".cursor/skills"):
+                child = source / child_name
+                if child.exists():
+                    operations.append({"kind": "copy-path", "module": module_id, "source": child_name, "target": str(root / Path(child_name).relative_to(".cursor")), "strategy": "preserve-relative-path", "ownership": "managed", "read_only": True})
+            rules = source / ".cursor/rules"
+            if rules.is_dir():
+                for child in sorted(item for item in rules.rglob("*") if item.is_file()):
+                    flattened = "-".join(child.relative_to(rules).parts)
+                    operations.append({"kind": "copy-path", "module": module_id, "source": child.relative_to(source).as_posix(), "target": str(root / "rules" / (Path(flattened).stem + ".mdc")), "strategy": "flatten-copy", "ownership": "managed", "read_only": True})
+            if (source / ".mcp.json").is_file():
+                try:
+                    merge_payload = json.loads((source / ".mcp.json").read_text(encoding="utf-8"))
+                except (OSError, json.JSONDecodeError):
+                    merge_payload = None
+                operation = {"kind": "merge-json", "module": module_id, "source": ".mcp.json", "target": str(root / "mcp.json"), "strategy": "merge-json", "read_only": True}
+                if merge_payload is not None:
+                    operation["merge_payload"] = merge_payload
+                operations.append(operation)
+            continue
         if target in {"claude", "claude-project"} and module_id == "hooks-runtime" and relative == Path("hooks") and source_path.is_dir():
             for child_name in ("hooks/hooks.json", "hooks/codex-hooks.json", "hooks/memory-persistence", "hooks/README.md"):
                 child = source / child_name
@@ -80,7 +109,7 @@ def plan_operations(source: Path, target_info: Dict[str, str], module_id: str, p
                 operation["content_transform"] = "antigravity-agent-frontmatter"
             operations.append(operation)
             continue
-        if source_path.is_dir() and target not in FLATTEN_TARGETS and target != "cursor":
+        if source_path.is_dir() and (target not in FLATTEN_TARGETS and (target != "cursor" or module_id not in CURSOR_FLATTEN_MODULES)):
             sync_paths = {"hermes": Path(".hermes"), "kimi": Path(".kimi"), "claude": Path(".claude-plugin"), "claude-project": Path(".claude-plugin"), "opencode": Path(".opencode"), "codex": Path(".codex")}
             strategy = "sync-root-children" if sync_paths.get(target) == relative else "preserve-relative-path"
             operations.append({"kind": "copy-path", "module": module_id, "source": raw, "target": str(root / relative), "strategy": strategy, "ownership": "managed", "read_only": True})
@@ -96,13 +125,19 @@ def plan_operations(source: Path, target_info: Dict[str, str], module_id: str, p
             continue
         for file_path in _files(source, relative):
             file_relative = file_path.relative_to(source)
-            cursor_rule = target == "cursor" and len(file_relative.parts) > 2 and file_relative.parts[:2] == (".cursor", "rules")
+            cursor_rule = target == "cursor" and file_relative.parts and (file_relative.parts[0] == "rules" or file_relative.parts[:2] == (".cursor", "rules"))
+            cursor_agent = target == "cursor" and file_relative.parts and file_relative.parts[0] == "agents"
             if target in FLATTEN_TARGETS and file_relative.parts and file_relative.parts[0] == "rules":
                 flattened = "-".join(file_relative.parts[1:])
                 destination = root / "rules" / flattened
                 strategy = "flatten-copy"
+            elif cursor_agent:
+                flattened = "-".join(file_relative.parts[1:])
+                destination = root / "agents" / ("ecc-" + flattened)
+                strategy = "flatten-copy"
             elif cursor_rule:
-                flattened = "-".join(file_relative.parts[2:])
+                start = 1 if file_relative.parts[0] == "rules" else 2
+                flattened = "-".join(file_relative.parts[start:])
                 destination = root / "rules" / (Path(flattened).stem + ".mdc")
                 strategy = "flatten-copy"
             else:
